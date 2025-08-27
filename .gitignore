@@ -42,7 +42,8 @@ Thumbs.db
 *xcuserdata*
 
 ## SDL contrib
-RecastDemo/Contrib/SDL/*
+# 节省时间，一并提交
+# RecastDemo/Contrib/SDL/*
 
 ## Generated doc files
 Docs/html
