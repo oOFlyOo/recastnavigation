@@ -1,3 +1,6 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+// Modified version of Recast/Detour's source file
+
 //
 // Copyright (c) 2009-2010 Mikko Mononen memon@inside.org
 //
@@ -16,186 +19,323 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
+#define _USE_MATH_DEFINES
+
+#include "Navmesh.h"
+
+#if RECAST_DEMO
 #include "Recast.h"
 #include "RecastAssert.h"
+#else
+#include "Recast/Recast.h"
+#include "Recast/RecastAssert.h"
+#endif
 
-#include <stdlib.h>
-
-namespace
+/// @par
+///
+/// Allows the formation of walkable regions that will flow over low lying 
+/// objects such as curbs, and up structures such as stairways. 
+/// 
+/// Two neighboring spans are walkable if: <tt>rcAbs(currentSpan.smax - neighborSpan.smax) < waklableClimb</tt>
+/// 
+/// @warning Will override the effect of #rcFilterLedgeSpans.  So if both filters are used, call
+/// #rcFilterLedgeSpans after calling this filter. 
+///
+/// @see rcHeightfield, rcConfig
+void rcFilterLowHangingWalkableObstacles(rcContext* ctx, const int walkableClimb, rcHeightfield& solid)
 {
-	const int MAX_HEIGHTFIELD_HEIGHT = 0xffff; // TODO (graham): Move this to a more visible constant and update usages.
-}
+	rcAssert(ctx);
 
-void rcFilterLowHangingWalkableObstacles(rcContext* context, const int walkableClimb, rcHeightfield& heightfield)
-{
-	rcAssert(context);
-
-	rcScopedTimer timer(context, RC_TIMER_FILTER_LOW_OBSTACLES);
-
-	const int xSize = heightfield.width;
-	const int zSize = heightfield.height;
-
-	for (int z = 0; z < zSize; ++z)
+	ctx->startTimer(RC_TIMER_FILTER_LOW_OBSTACLES);
+	
+	const int w = solid.width;
+	const int h = solid.height;
+	
+	for (int y = 0; y < h; ++y)
 	{
-		for (int x = 0; x < xSize; ++x)
+		for (int x = 0; x < w; ++x)
 		{
-			rcSpan* previousSpan = NULL;
-			bool previousWasWalkable = false;
-			unsigned char previousAreaID = RC_NULL_AREA;
-
-			// For each span in the column...
-			for (rcSpan* span = heightfield.spans[x + z * xSize]; span != NULL; previousSpan = span, span = span->next)
+			rcSpan* ps = 0;
+			bool previousWalkable = false;
+			unsigned char previousArea = RC_NULL_AREA;
+			
+			for (rcSpan* s = solid.spans[x + y*w]; s; ps = s, s = s->next)
 			{
-				const bool walkable = span->area != RC_NULL_AREA;
-
-				// If current span is not walkable, but there is walkable span just below it and the height difference
-				// is small enough for the agent to walk over, mark the current span as walkable too.
-				if (!walkable && previousWasWalkable && (int)span->smax - (int)previousSpan->smax <= walkableClimb)
+				const bool walkable = s->data.area != RC_NULL_AREA;
+				// If current span is not walkable, but there is walkable
+				// span just below it, mark the span above it walkable too.
+				if (!walkable && previousWalkable)
 				{
-					span->area = previousAreaID;
+					if (rcAbs((int)s->data.smax - (int)ps->data.smax) <= walkableClimb)
+						s->data.area = previousArea;
 				}
-
-				// Copy the original walkable value regardless of whether we changed it.
-				// This prevents multiple consecutive non-walkable spans from being erroneously marked as walkable.
-				previousWasWalkable = walkable;
-				previousAreaID = span->area;
+				// Copy walkable flag so that it cannot propagate
+				// past multiple non-walkable objects.
+				previousWalkable = walkable;
+				previousArea = s->data.area;
 			}
 		}
 	}
+
+	ctx->stopTimer(RC_TIMER_FILTER_LOW_OBSTACLES);
 }
 
-void rcFilterLedgeSpans(rcContext* context, const int walkableHeight, const int walkableClimb, rcHeightfield& heightfield)
+void rcFilterLedgeSpansImp(rcContext* ctx, const int walkableHeight, const int walkableClimb,
+                           const rcNeighborSlopeFilterMode neighborSlopeFilterMode, const rcReal maxStepFromWalkableSlope, const rcReal ch,	// UE
+                           const int filterLedgeSpansAtY, rcHeightfield& solid)
 {
-	rcAssert(context);
-	
-	rcScopedTimer timer(context, RC_TIMER_FILTER_BORDER);
+	rcAssert(ctx);
 
-	const int xSize = heightfield.width;
-	const int zSize = heightfield.height;
-	
-	// Mark spans that are adjacent to a ledge as unwalkable..
-	for (int z = 0; z < zSize; ++z)
+	const int w = solid.width;
+	const int h = solid.height;
+	const int MAX_HEIGHT = RC_SPAN_MAX_HEIGHT;
+
+	const int maxStepFor2CellsVx = rcCeil(2*maxStepFromWalkableSlope / ch);	// UE
+
+	// Mark border spans.
+	for (int x = 0; x < w; ++x)
 	{
-		for (int x = 0; x < xSize; ++x)
+		for (rcSpan* s = solid.spans[x + filterLedgeSpansAtY*w]; s; s = s->next)
 		{
-			for (rcSpan* span = heightfield.spans[x + z * xSize]; span; span = span->next)
+			// Skip non walkable spans.
+			if (s->data.area == RC_NULL_AREA)
+				continue;
+
+			const int bot = (int)(s->data.smax);
+			const int top = s->next ? (int)(s->next->data.smin) : MAX_HEIGHT;
+
+			// Find neighbours minimum height.
+			int minh = MAX_HEIGHT;
+
+			// Min and max height of accessible neighbours.
+			int asmin = s->data.smax;
+			int asmax = s->data.smax;
+
+			for (int dir = 0; dir < 4; ++dir)
 			{
-				// Skip non-walkable spans.
-				if (span->area == RC_NULL_AREA)
+				int dx = x + rcGetDirOffsetX(dir);
+				int dy = filterLedgeSpansAtY + rcGetDirOffsetY(dir);
+				// Skip neighbours which are out of bounds.
+				if (dx < 0 || dy < 0 || dx >= w || dy >= h)
 				{
+					minh = rcMin(minh, -walkableClimb - bot);
 					continue;
 				}
 
-				const int floor = (int)(span->smax);
-				const int ceiling = span->next ? (int)(span->next->smin) : MAX_HEIGHTFIELD_HEIGHT;
+				// From minus infinity to the first span.
+				rcSpan* ns = solid.spans[dx + dy*w];
+				int nbot = -walkableClimb;
+				int ntop = ns ? (int)ns->data.smin : MAX_HEIGHT;
+				// Skip neightbour if the gap between the spans is too small.
+				if (rcMin(top, ntop) - rcMax(bot, nbot) > walkableHeight)
+					minh = rcMin(minh, nbot - bot);
 
-				// The difference between this walkable area and the lowest neighbor walkable area.
-				// This is the difference between the current span and all neighbor spans that have
-				// enough space for an agent to move between, but not accounting at all for surface slope.
-				int lowestNeighborFloorDifference = MAX_HEIGHTFIELD_HEIGHT;
-
-				// Min and max height of accessible neighbours.
-				int lowestTraversableNeighborFloor = span->smax;
-				int highestTraversableNeighborFloor = span->smax;
-
-				for (int direction = 0; direction < 4; ++direction)
+				// Rest of the spans.
+				for (ns = solid.spans[dx + dy*w]; ns; ns = ns->next)
 				{
-					const int neighborX = x + rcGetDirOffsetX(direction);
-					const int neighborZ = z + rcGetDirOffsetY(direction);
-
-					// Skip neighbours which are out of bounds.
-					if (neighborX < 0 || neighborZ < 0 || neighborX >= xSize || neighborZ >= zSize)
+					nbot = (int)ns->data.smax;
+					ntop = ns->next ? (int)ns->next->data.smin : MAX_HEIGHT;
+					// Skip neightbour if the gap between the spans is too small.
+					if (rcMin(top, ntop) - rcMax(bot, nbot) > walkableHeight)
 					{
-						lowestNeighborFloorDifference = -walkableClimb - 1;
-						break;
-					}
+						minh = rcMin(minh, nbot - bot);
 
-					const rcSpan* neighborSpan = heightfield.spans[neighborX + neighborZ * xSize];
-
-					// The most we can step down to the neighbor is the walkableClimb distance.
-					// Start with the area under the neighbor span
-					int neighborCeiling = neighborSpan ? (int)neighborSpan->smin : MAX_HEIGHTFIELD_HEIGHT;
-
-					// Skip neighbour if the gap between the spans is too small.
-					if (rcMin(ceiling, neighborCeiling) - floor >= walkableHeight)
-					{
-						lowestNeighborFloorDifference = (-walkableClimb - 1);
-						break;
-					}
-
-					// For each span in the neighboring column...
-					for (; neighborSpan != NULL; neighborSpan = neighborSpan->next)
-					{
-						const int neighborFloor = (int)neighborSpan->smax;
-						neighborCeiling = neighborSpan->next ? (int)neighborSpan->next->smin : MAX_HEIGHTFIELD_HEIGHT;
-
-						// Only consider neighboring areas that have enough overlap to be potentially traversable.
-						if (rcMin(ceiling, neighborCeiling) - rcMax(floor, neighborFloor) < walkableHeight)
+						// Find min/max accessible neighbour height. 
+						if (neighborSlopeFilterMode != RC_SLOPE_FILTER_NONE && rcAbs(nbot - bot) <= walkableClimb)	//UE
 						{
-							// No space to traverse between them.
-							continue;
-						}
-
-						const int neighborFloorDifference = neighborFloor - floor;
-						lowestNeighborFloorDifference = rcMin(lowestNeighborFloorDifference, neighborFloorDifference);
-
-						// Find min/max accessible neighbor height.
-						// Only consider neighbors that are at most walkableClimb away.
-						if (rcAbs(neighborFloorDifference) <= walkableClimb)
-						{
-							// There is space to move to the neighbor cell and the slope isn't too much.
-							lowestTraversableNeighborFloor = rcMin(lowestTraversableNeighborFloor, neighborFloor);
-							highestTraversableNeighborFloor = rcMax(highestTraversableNeighborFloor, neighborFloor);
-						}
-						else if (neighborFloorDifference < -walkableClimb)
-						{
-							// We already know this will be considered a ledge span so we can early-out
-							break;
+							if (nbot < asmin) asmin = nbot;
+							if (nbot > asmax) asmax = nbot;
 						}
 					}
-				}
-
-				// The current span is close to a ledge if the magnitude of the drop to any neighbour span is greater than the walkableClimb distance.
-				// That is, there is a gap that is large enough to let an agent move between them, but the drop (surface slope) is too large to allow it.
-				// (If this is the case, then biggestNeighborStepDown will be negative, so compare against the negative walkableClimb as a means of checking
-				// the magnitude of the delta)
-				if (lowestNeighborFloorDifference < -walkableClimb)
-				{
-					span->area = RC_NULL_AREA;
-				}
-				// If the difference between all neighbor floors is too large, this is a steep slope, so mark the span as an unwalkable ledge.
-				else if (highestTraversableNeighborFloor - lowestTraversableNeighborFloor > walkableClimb)
-				{
-					span->area = RC_NULL_AREA;
 				}
 			}
+
+			// The current span is close to a ledge if the drop to any
+			// neighbour span is less than the walkableClimb.
+			if (minh < -walkableClimb)
+			{
+				s->data.area = RC_NULL_AREA;
+			}
+			// If the difference between all neighbours is too large,
+			// we are at steep slope, mark the span as ledge.
+//@UE BEGIN
+			// This test is meant to reject step/slope combinations that can't be climbed by the agent.
+			// At the span level, we detect the walkable climb height between neighbor spans. At the agent level,
+			// the radius of the agent can mean that we should consider multiple neighbor spans to detect what would be
+			// the actual height of the step to climb. Because of that, depending on the number of voxel represented by
+			// the agent radius, the following test might cause more problems than improvements.
+			// That's why we decided to allow to control it via the filterNeighborSlope parameter
+			else if (neighborSlopeFilterMode == RC_SLOPE_FILTER_RECAST && (asmax - asmin) > walkableClimb)
+
+			{
+				s->data.area = RC_NULL_AREA;
+			}
+			// Compare the step between the min and the max with the maximum step made by a uniform slope for 2 spans (since min and max can be 2 cells apart).
+			else if (neighborSlopeFilterMode == RC_SLOPE_FILTER_USE_HEIGHT_FROM_WALKABLE_SLOPE && (asmax - asmin) > maxStepFor2CellsVx)
+			{
+				s->data.area = RC_NULL_AREA;
+			}
+//@UE END			
 		}
 	}
 }
 
-void rcFilterWalkableLowHeightSpans(rcContext* context, const int walkableHeight, rcHeightfield& heightfield)
+/// @par
+///
+/// A ledge is a span with one or more neighbors whose maximum is further away than @p walkableClimb
+/// from the current span's maximum.
+/// This method removes the impact of the overestimation of conservative voxelization 
+/// so the resulting mesh will not have regions hanging in the air over ledges.
+/// 
+/// A span is a ledge if: <tt>rcAbs(currentSpan.smax - neighborSpan.smax) > walkableClimb</tt>
+/// 
+/// @see rcHeightfield, rcConfig
+void rcFilterLedgeSpans(rcContext* ctx, const int walkableHeight, const int walkableClimb,
+						const rcNeighborSlopeFilterMode neighborSlopeFilterMode, const rcReal maxStepFromWalkableSlope, const rcReal ch,	//UE
+						rcHeightfield& solid)
 {
-	rcAssert(context);
-	rcScopedTimer timer(context, RC_TIMER_FILTER_WALKABLE);
+	rcAssert(ctx);
+	
+	ctx->startTimer(RC_TIMER_FILTER_BORDER);
 
-	const int xSize = heightfield.width;
-	const int zSize = heightfield.height;
+	const int h = solid.height;
+	
+	// Mark border spans.
+	for (int y = 0; y < h; ++y)
+	{
+		rcFilterLedgeSpansImp(ctx, walkableHeight, walkableClimb, neighborSlopeFilterMode, maxStepFromWalkableSlope, ch, y, solid);	//UE
+	}
 
+	ctx->stopTimer(RC_TIMER_FILTER_BORDER);
+}	
+
+
+/// @see rcHeightfield, rcConfig
+void rcFilterLedgeSpans(rcContext* ctx, const int walkableHeight, const int walkableClimb,
+	const rcNeighborSlopeFilterMode neighborSlopeFilterMode, const rcReal maxStepFromWalkableSlope, const rcReal ch,	// UE
+	const int yStart, const int maxYProcess, //UE
+	rcHeightfield& solid)
+{
+	rcAssert(ctx);
+
+	ctx->startTimer(RC_TIMER_FILTER_BORDER);
+
+	const int h = rcMin(yStart + maxYProcess, solid.height);
+
+	for (int y = yStart; y < h; ++y)
+	{
+		rcFilterLedgeSpansImp(ctx, walkableHeight, walkableClimb, neighborSlopeFilterMode, maxStepFromWalkableSlope, ch, y, solid);
+	}
+
+	ctx->stopTimer(RC_TIMER_FILTER_BORDER);
+}
+
+/// @par
+///
+/// For this filter, the clearance above the span is the distance from the span's 
+/// maximum to the next higher span's minimum. (Same grid column.)
+/// 
+/// @see rcHeightfield, rcConfig
+void rcFilterWalkableLowHeightSpans(rcContext* ctx, int walkableHeight, rcHeightfield& solid)
+{
+	rcAssert(ctx);
+	
+	ctx->startTimer(RC_TIMER_FILTER_WALKABLE);
+	
+	const int w = solid.width;
+	const int h = solid.height;
+	const int MAX_HEIGHT = RC_SPAN_MAX_HEIGHT;
+	
 	// Remove walkable flag from spans which do not have enough
 	// space above them for the agent to stand there.
-	for (int z = 0; z < zSize; ++z)
+	for (int y = 0; y < h; ++y)
 	{
-		for (int x = 0; x < xSize; ++x)
+		for (int x = 0; x < w; ++x)
 		{
-			for (rcSpan* span = heightfield.spans[x + z*xSize]; span; span = span->next)
+			for (rcSpan* s = solid.spans[x + y*w]; s; s = s->next)
 			{
-				const int floor = (int)(span->smax);
-				const int ceiling = span->next ? (int)(span->next->smin) : MAX_HEIGHTFIELD_HEIGHT;
-				if (ceiling - floor < walkableHeight)
-				{
-					span->area = RC_NULL_AREA;
-				}
+				const int bot = (int)(s->data.smax);
+				const int top = s->next ? (int)(s->next->data.smin) : MAX_HEIGHT;
+				if ((top - bot) < walkableHeight)	// UE
+					s->data.area = RC_NULL_AREA;
 			}
 		}
 	}
+	
+	ctx->stopTimer(RC_TIMER_FILTER_WALKABLE);
+}
+
+void rcFilterWalkableLowHeightSpansSequences(rcContext* ctx, int walkableHeight, rcHeightfield& solid)
+{
+	rcAssert(ctx);
+
+	ctx->startTimer(RC_TIMER_FILTER_WALKABLE);
+
+	const int w = solid.width;
+	const int h = solid.height;
+
+	const int32 MaxSpans = 64;
+	rcCompactSpan SpanList[MaxSpans];
+	int32 NumSpans;
+	memset(SpanList, 0, sizeof(SpanList));
+
+	// UE: leave only single low span below valid one (null area doesn't count) or after leaving walkableHeight space between them
+
+	// Remove walkable flag from spans which do not have enough
+	// space above them for the agent to stand there.
+	for (int y = 0; y < h; ++y)
+	{
+		for (int x = 0; x < w; ++x)
+		{
+			// build compact span list, we need to iterate from top to bottom
+			NumSpans = 0;
+			for (rcSpan* s = solid.spans[x + y*w]; s; s = s->next)
+			{
+				const rcSpanUInt bot = s->data.smax;
+				const rcSpanUInt top = s->next ? s->next->data.smin : RC_SPAN_MAX_HEIGHT;
+				SpanList[NumSpans].y = rcClamp(bot, 0, RC_SPAN_MAX_HEIGHT);
+				SpanList[NumSpans].h = (unsigned char)rcClamp(top - bot, 0, 0xff);
+				SpanList[NumSpans].reg = s->data.area;
+				
+				NumSpans++;
+				if (NumSpans >= MaxSpans)
+				{
+					break;
+				}
+			}
+
+			rcSpanUInt NextAllowedBase = RC_SPAN_MAX_HEIGHT;
+			for (int32 Idx = NumSpans - 1; Idx >= 0; Idx--)
+			{
+				if (SpanList[Idx].h < walkableHeight)
+				{
+					if (SpanList[Idx].y < NextAllowedBase)
+					{
+						NextAllowedBase = rcMax(0, (int)SpanList[Idx].y - walkableHeight);
+					}
+					else
+					{
+						SpanList[Idx].reg = RC_NULL_AREA;
+					}
+				}
+				else if (SpanList[Idx].reg != RC_NULL_AREA)
+				{
+					NextAllowedBase = SpanList[Idx].y;
+				}
+			}
+
+			int32 SpanIdx = 0;
+			for (rcSpan* s = solid.spans[x + y*w]; s; s = s->next)
+			{
+				if (SpanIdx < MaxSpans)
+				{
+					s->data.area = SpanList[SpanIdx].reg;
+				}
+
+				SpanIdx++;
+			}
+		}
+	}
+
+	ctx->stopTimer(RC_TIMER_FILTER_WALKABLE);
 }
