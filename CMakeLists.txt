@@ -49,11 +49,11 @@ configure_file(
 install(FILES "${RecastNavigation_BINARY_DIR}/recastnavigation.pc"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
-add_subdirectory(DebugUtils)
-add_subdirectory(Detour)
-add_subdirectory(DetourCrowd)
-add_subdirectory(DetourTileCache)
-add_subdirectory(Recast)
+# add_subdirectory(DebugUtils)
+# add_subdirectory(Detour)
+# add_subdirectory(DetourCrowd)
+# add_subdirectory(DetourTileCache)
+add_subdirectory(RecastNavmesh)
 
 configure_package_config_file(
     ${PROJECT_SOURCE_DIR}/recastnavigation-config.cmake.in

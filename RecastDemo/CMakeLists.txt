@@ -12,7 +12,7 @@ endif()
 
 find_package(OpenGL REQUIRED)
 if(APPLE)
-  find_library(SDL2_LIBRARY 
+  find_library(SDL2_LIBRARY
     NAMES SDL2
     PATHS ${SDL2_ROOT_DIR}
     REQUIRED)
@@ -23,11 +23,12 @@ endif()
 include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
 include_directories(SYSTEM Contrib/fastlz)
 include_directories(SYSTEM Contrib)
-include_directories(../DebugUtils/Include)
-include_directories(../Detour/Include)
-include_directories(../DetourCrowd/Include)
-include_directories(../DetourTileCache/Include)
-include_directories(../Recast/Include)
+# include_directories(../DebugUtils/Include)
+# include_directories(../Detour/Include)
+# include_directories(../DetourCrowd/Include)
+# include_directories(../DetourTileCache/Include)
+# include_directories(../Recast/Include)
+include_directories(../RecastNavmesh/Include)
 include_directories(Include)
 include_directories(Contrib/SDL/include)
 if(APPLE)
@@ -67,11 +68,14 @@ else()
 endif()
 
 
-add_dependencies(RecastDemo DebugUtils Detour DetourCrowd DetourTileCache Recast)
+# add_dependencies(RecastDemo DebugUtils Detour DetourCrowd DetourTileCache Recast)
+add_dependencies(RecastDemo RecastNavmesh)
 if(APPLE)
-  target_link_libraries(RecastDemo ${OPENGL_LIBRARIES} ${SDL2_LIBRARY} DebugUtils Detour DetourCrowd DetourTileCache Recast)
+  target_link_libraries(RecastDemo ${OPENGL_LIBRARIES} ${SDL2_LIBRARY} RecastNavmesh)
+  # target_link_libraries(RecastDemo ${OPENGL_LIBRARIES} ${SDL2_LIBRARY} DebugUtils Detour DetourCrowd DetourTileCache Recast)
 else()
-  target_link_libraries(RecastDemo ${OPENGL_LIBRARIES} SDL2::SDL2main DebugUtils Detour DetourCrowd DetourTileCache Recast)
+  target_link_libraries(RecastDemo ${OPENGL_LIBRARIES} SDL2::SDL2main RecastNavmesh)
+  # target_link_libraries(RecastDemo ${OPENGL_LIBRARIES} SDL2::SDL2main DebugUtils Detour DetourCrowd DetourTileCache Recast)
 endif()
 
 

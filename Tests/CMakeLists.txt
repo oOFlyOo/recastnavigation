@@ -12,8 +12,10 @@ add_executable(Tests
 
 set_property(TARGET Tests PROPERTY CXX_STANDARD 17)
 
-add_dependencies(Tests Recast Detour DetourCrowd)
-target_link_libraries(Tests Recast Detour DetourCrowd)
+# add_dependencies(Tests Recast Detour DetourCrowd)
+# target_link_libraries(Tests Recast Detour DetourCrowd)
+add_dependencies(Tests RecastNavmesh)
+target_link_libraries(Tests RecastNavmesh)
 
 find_package(Catch2 QUIET)
 if (Catch2_FOUND)
