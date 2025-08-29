@@ -7,7 +7,14 @@ SET(SOVERSION 1)
 set(LIB_VERSION 1.6.0)
 string(REPLACE "." "," LIB_VERSION_NUM "${LIB_VERSION}.0")
 
-set_property(GLOBAL PROPERTY CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+# set_property(GLOBAL PROPERTY CXX_STANDARD 17)
+
+# if(MSVC)
+#    add_compile_options(/std:c++17)  # 显式设置MSVC标志
+# endif()
 
 option(RECASTNAVIGATION_DEMO "Build demo" ON)
 option(RECASTNAVIGATION_TESTS "Build tests" ON)
