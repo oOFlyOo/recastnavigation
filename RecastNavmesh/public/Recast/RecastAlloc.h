@@ -24,8 +24,6 @@
 
 #include "CoreMinimal.h"
 
-#include "Navmesh.h"
-
 /// Provides hint values to the memory allocator on how long the
 /// memory is expected to be used.
 enum rcAllocHint

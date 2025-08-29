@@ -23,21 +23,15 @@
 
 #include "CoreMinimal.h"
 
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 #include "Stats/Stats.h"
 #endif
 
 #define _USE_MATH_DEFINES
 
-#if RECAST_DEMO
-#include "Recast.h"
-#include "RecastAlloc.h"
-#include "RecastAssert.h"
-#else
 #include "Recast/Recast.h"
 #include "Recast/RecastAlloc.h"
 #include "Recast/RecastAssert.h"
-#endif
 
 static void calculateDistanceField(rcCompactHeightfield& chf, unsigned short* src, unsigned short& maxDist)
 {
@@ -967,7 +961,7 @@ static bool filterSmallRegions(rcContext* ctx, int minRegionArea, int mergeRegio
 /// @see rcCompactHeightfield, rcBuildRegions, rcBuildRegionsMonotone
 bool rcBuildDistanceField(rcContext* ctx, rcCompactHeightfield& chf)
 {
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Navigation_BuildDistanceField);
 #endif
 	

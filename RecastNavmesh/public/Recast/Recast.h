@@ -26,7 +26,7 @@
 
 #include "Navmesh.h"
 
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 #include "Logging/LogMacros.h"
 #endif
 #include "RecastLargeWorldCoordinates.h"
@@ -161,7 +161,7 @@ enum rcTimerLabel
 	RC_MAX_TIMERS
 };
 
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 NAVMESH_API DECLARE_LOG_CATEGORY_EXTERN(LogRecast, Log, All);
 #endif
 

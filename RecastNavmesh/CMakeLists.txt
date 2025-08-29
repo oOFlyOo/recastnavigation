@@ -1,10 +1,10 @@
-file(GLOB SOURCES Source/*.cpp)
+file(GLOB_RECURSE SOURCES private/*.cpp)
 add_library(RecastNavmesh ${SOURCES})
 
 add_library(RecastNavigation::RecastNavmesh ALIAS RecastNavmesh)
 set_target_properties(RecastNavmesh PROPERTIES DEBUG_POSTFIX -d)
 
-set(RecastNavmesh_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Include")
+set(RecastNavmesh_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/public")
 
 if(RECASTNAVIGATION_DT_POLYREF64)
     target_compile_definitions(RecastNavmesh PUBLIC DT_POLYREF64)
@@ -16,6 +16,24 @@ endif()
 
 if(NOT RECASTNAVIGATION_ENABLE_ASSERTS)
     target_compile_definitions(RecastNavmesh PUBLIC RC_DISABLE_ASSERTS)
+endif()
+
+if(RECASTNAVIGATION_RECAST_UNREAL_ENGINE)
+    target_compile_definitions(RecastNavmesh PUBLIC RECAST_UNREAL_ENGINE=1)
+else()
+	target_compile_definitions(RecastNavmesh PUBLIC RECAST_UNREAL_ENGINE=0)
+endif()
+
+if(RECASTNAVIGATION_RECAST_DEMO)
+    target_compile_definitions(RecastNavmesh PUBLIC RECAST_DEMO=1)
+else()
+	target_compile_definitions(RecastNavmesh PUBLIC RECAST_DEMO=0)
+endif()
+
+if(RECASTNAVIGATION_RECAST_TODO)
+    target_compile_definitions(RecastNavmesh PUBLIC RECAST_TODO=1)
+else()
+	target_compile_definitions(RecastNavmesh PUBLIC RECAST_TODO=0)
 endif()
 
 target_include_directories(RecastNavmesh PUBLIC

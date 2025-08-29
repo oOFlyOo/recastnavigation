@@ -23,20 +23,13 @@
 
 #include "Navmesh.h"
 
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 #include "Stats/Stats.h"
 #endif
 #define _USE_MATH_DEFINES
-
-#if RECAST_DEMO
-#include "Recast.h"
-#include "RecastAlloc.h"
-#include "RecastAssert.h"
-#else
 #include "Recast/Recast.h"
 #include "Recast/RecastAlloc.h"
 #include "Recast/RecastAssert.h"
-#endif
 
 struct rcLayerRegionMonotone
 {
@@ -908,7 +901,7 @@ bool rcBuildHeightfieldLayersMonotone(rcContext* ctx, rcCompactHeightfield& chf,
 							  const rcBorderSize borderSize, const int walkableHeight,		//@UE
 							  rcHeightfieldLayerSet& lset)
 {
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Navigation_BuildHeightfieldLayersMonotone);
 #endif
 	
@@ -953,7 +946,7 @@ bool rcBuildHeightfieldLayersChunky(rcContext* ctx, rcCompactHeightfield& chf,
 									const int chunkSize,
 									rcHeightfieldLayerSet& lset)
 {
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Navigation_BuildHeightfieldLayersChunky);
 #endif
 	
@@ -1126,7 +1119,7 @@ bool rcBuildHeightfieldLayers(rcContext* ctx, rcCompactHeightfield& chf,
 	const rcBorderSize borderSize, const int walkableHeight,		//@UE
 	rcHeightfieldLayerSet& lset)
 {
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Navigation_BuildHeightfieldLayers);
 #endif
 	

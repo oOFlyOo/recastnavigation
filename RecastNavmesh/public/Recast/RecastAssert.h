@@ -22,14 +22,12 @@
 #ifndef RECASTASSERT_H
 #define RECASTASSERT_H
 
-#include "Navmesh.h"
-
 #include "CoreMinimal.h"
 
 // Note: This header file's only purpose is to include define assert.
 // Feel free to change the file and include your own implementation instead.
 
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 #ifdef NDEBUG
 // From http://cnicholson.net/2009/02/stupid-c-tricks-adventures-in-assert/
 #	define rcAssert(x) do { (void)sizeof((x)); } while((void)(__LINE__==-1),false)  

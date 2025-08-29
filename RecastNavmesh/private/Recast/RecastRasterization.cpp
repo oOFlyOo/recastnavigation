@@ -23,22 +23,15 @@
 
 #include "CoreMinimal.h"
 #define _USE_MATH_DEFINES
-
-#if RECAST_DEMO
-#include "Recast.h"
-#include "RecastAlloc.h"
-#include "RecastAssert.h"
-#else
 #include "Recast/Recast.h"
 #include "Recast/RecastAlloc.h"
 #include "Recast/RecastAssert.h"
-#endif
 
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 #include "HAL/ConsoleManager.h"
 #endif
 
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 //@UE BEGIN
 namespace UE::Recast::Private
 {
@@ -879,7 +872,7 @@ static void rasterizeTri(const rcReal* v0, const rcReal* v1, const rcReal* v2,
 
 				int smin = Temp.sminmax[0];
 
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 				// +1 because span sample heights are computed from rcFloor instead of rcCeil (and they need to have a height of at least 1)
 				int smax = UE::Recast::Private::bEnableSpanHeightRasterizationFix ? Temp.sminmax[1] + 1 : Temp.sminmax[1]; //UE
 #else

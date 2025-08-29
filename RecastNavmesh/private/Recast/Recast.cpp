@@ -21,19 +21,12 @@
 
 #include "Navmesh.h"
 
-#if RECAST_DEMO
-#include "Recast.h"
-#define _USE_MATH_DEFINES
-#include "RecastAlloc.h"
-#include "RecastAssert.h"
-#else
 #include "Recast/Recast.h"
 #define _USE_MATH_DEFINES
 #include "Recast/RecastAlloc.h"
 #include "Recast/RecastAssert.h"
-#endif
 
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 DEFINE_LOG_CATEGORY(LogRecast);
 #endif
 
@@ -77,7 +70,7 @@ void rcContext::log(const rcLogCategory category, const char* format, ...)
 	char msg[MSG_SIZE];
 	va_list ap;
 	va_start(ap, format);
-#if TO_DO
+#if RECAST_TODO
 	int len = 0;
 #else
 	int len = FCStringAnsi::GetVarArgs(msg, MSG_SIZE, format, ap);
@@ -482,7 +475,7 @@ bool rcBuildCompactHeightfield(rcContext* ctx, const int walkableHeight, const i
 	chf.cells = (rcCompactCell*)rcAlloc(sizeof(rcCompactCell)*w*h, RC_ALLOC_PERM);
 	if (!chf.cells)
 	{
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 		UE_LOG(LogRecast, VeryVerbose, TEXT("rcBuildCompactHeightfield: Out of memory 'chf.cells' (%d)"), w*h);
 #endif
 		return false;
@@ -492,7 +485,7 @@ bool rcBuildCompactHeightfield(rcContext* ctx, const int walkableHeight, const i
 	if (!chf.spans)
 	{
 		//converted to UE_log to avoid false positives with Chaos
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 		UE_LOG(LogRecast, VeryVerbose, TEXT("rcBuildCompactHeightfield: Out of memory 'chf.spans' (%d)"), spanCount);
 #endif
 		return false;
@@ -501,7 +494,7 @@ bool rcBuildCompactHeightfield(rcContext* ctx, const int walkableHeight, const i
 	chf.areas = (unsigned char*)rcAlloc(sizeof(unsigned char)*spanCount, RC_ALLOC_PERM);
 	if (!chf.areas)
 	{
-#if UNREAL_ENGINE
+#if RECAST_UNREAL_ENGINE
 		UE_LOG(LogRecast, VeryVerbose, TEXT("rcBuildCompactHeightfield: Out of memory 'chf.areas' (%d)"), spanCount);
 #endif
 		return false;

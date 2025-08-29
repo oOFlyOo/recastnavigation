@@ -21,18 +21,9 @@
 
 #include "CoreMinimal.h"
 #define _USE_MATH_DEFINES
-
-#include "Navmesh.h"
-
-#if RECAST_DEMO
-#include "Recast.h"
-#include "RecastAlloc.h"
-#include "RecastAssert.h"
-#else
 #include "Recast/Recast.h"
 #include "Recast/RecastAlloc.h"
 #include "Recast/RecastAssert.h"
-#endif
 
 /// @par 
 /// 

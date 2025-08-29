@@ -19,20 +19,13 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#include "Navmesh.h"
 
 #include "CoreMinimal.h"
 #define _USE_MATH_DEFINES
 
-#if RECAST_DEMO
-#include "Recast.h"
-#include "RecastAlloc.h"
-#include "RecastAssert.h"
-#else
 #include "Recast/Recast.h"
 #include "Recast/RecastAlloc.h"
 #include "Recast/RecastAssert.h"
-#endif
 
 static const unsigned RC_UNSET_HEIGHT = 0xffff;
 

@@ -23,13 +23,8 @@
 
 #include "Navmesh.h"
 
-#if RECAST_DEMO
-#include "Recast.h"
-#include "RecastAssert.h"
-#else
 #include "Recast/Recast.h"
 #include "Recast/RecastAssert.h"
-#endif
 
 /// @par
 ///

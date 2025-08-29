@@ -21,11 +21,7 @@
 
 #include "Navmesh.h"
 
-#if RECAST_DEMO
-#include "RecastAlloc.h"
-#else
 #include "Recast/RecastAlloc.h"
-#endif
 
 static void *rcAllocDefault(int size, rcAllocHint)
 {
