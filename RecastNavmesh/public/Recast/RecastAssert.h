@@ -36,7 +36,7 @@
 #	define rcAssert(x) { assert(x); CA_ASSUME(x); } (void)0
 #endif
 #else
-#	define rcAssert(x) do { (void)sizeof((x)); } while((void)(__LINE__==-1),false)  
+#	define rcAssert(x) do { (void)sizeof((x)); } while((void)(__LINE__==-1),false)
 #endif
 
 #endif // RECASTASSERT_H

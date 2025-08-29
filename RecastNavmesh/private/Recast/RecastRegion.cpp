@@ -961,9 +961,7 @@ static bool filterSmallRegions(rcContext* ctx, int minRegionArea, int mergeRegio
 /// @see rcCompactHeightfield, rcBuildRegions, rcBuildRegionsMonotone
 bool rcBuildDistanceField(rcContext* ctx, rcCompactHeightfield& chf)
 {
-#if RECAST_UNREAL_ENGINE
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_Navigation_BuildDistanceField);
-#endif
 	
 	rcAssert(ctx);
 	

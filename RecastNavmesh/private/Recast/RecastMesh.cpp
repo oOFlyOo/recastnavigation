@@ -20,7 +20,6 @@
 //
 
 #define _USE_MATH_DEFINES
-
 #include "Recast/Recast.h"
 #include "Recast/RecastAlloc.h"
 #include "Recast/RecastAssert.h"
