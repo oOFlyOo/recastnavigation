@@ -1,15 +1,44 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+// Modified version of Recast/Detour's source file
+
+//
+// Copyright (c) 2009-2010 Mikko Mononen memon@inside.org
+//
+// This software is provided 'as-is', without any express or implied
+// warranty.  In no event will the authors be held liable for any damages
+// arising from the use of this software.
+// Permission is granted to anyone to use this software for any purpose,
+// including commercial applications, and to alter it and redistribute it
+// freely, subject to the following restrictions:
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//
+
 #ifndef DETOURTILECACHE_H
 #define DETOURTILECACHE_H
 
-#include "DetourStatus.h"
+#include "Navmesh.h"
+
+#include "CoreMinimal.h"
+#include "Detour/DetourLargeWorldCoordinates.h"
+#include "Detour/DetourStatus.h"
+
+struct dtTileCacheAlloc;
+struct dtTileCacheCompressor;
 
 typedef unsigned int dtObstacleRef;
+
 typedef unsigned int dtCompressedTileRef;
 
 /// Flags for addTile
 enum dtCompressedTileFlags
 {
-	DT_COMPRESSEDTILE_FREE_DATA = 0x01	///< Navmesh owns the tile memory and should free it.
+	DT_COMPRESSEDTILE_FREE_DATA = 0x01,					///< Navmesh owns the tile memory and should free it.
 };
 
 struct dtCompressedTile
@@ -29,50 +58,17 @@ enum ObstacleState
 	DT_OBSTACLE_EMPTY,
 	DT_OBSTACLE_PROCESSING,
 	DT_OBSTACLE_PROCESSED,
-	DT_OBSTACLE_REMOVING
-};
-
-enum ObstacleType
-{
-	DT_OBSTACLE_CYLINDER,
-	DT_OBSTACLE_BOX, // AABB
-	DT_OBSTACLE_ORIENTED_BOX // OBB
-};
-
-struct dtObstacleCylinder
-{
-	float pos[ 3 ];
-	float radius;
-	float height;
-};
-
-struct dtObstacleBox
-{
-	float bmin[ 3 ];
-	float bmax[ 3 ];
-};
-
-struct dtObstacleOrientedBox
-{
-	float center[ 3 ];
-	float halfExtents[ 3 ];
-	float rotAux[ 2 ]; //{ cos(0.5f*angle)*sin(-0.5f*angle); cos(0.5f*angle)*cos(0.5f*angle) - 0.5 }
+	DT_OBSTACLE_REMOVING,
 };
 
 static const int DT_MAX_TOUCHED_TILES = 8;
 struct dtTileCacheObstacle
 {
-	union
-	{
-		dtObstacleCylinder cylinder;
-		dtObstacleBox box;
-		dtObstacleOrientedBox orientedBox;
-	};
-
+	dtReal pos[3];
+	dtReal radius, height;
 	dtCompressedTileRef touched[DT_MAX_TOUCHED_TILES];
 	dtCompressedTileRef pending[DT_MAX_TOUCHED_TILES];
 	unsigned short salt;
-	unsigned char type;
 	unsigned char state;
 	unsigned char ntouched;
 	unsigned char npending;
@@ -81,31 +77,51 @@ struct dtTileCacheObstacle
 
 struct dtTileCacheParams
 {
-	float orig[3];
-	float cs, ch;
+	dtReal orig[3];
+	dtReal cs, ch;
 	int width, height;
-	float walkableHeight;
-	float walkableRadius;
-	float walkableClimb;
-	float maxSimplificationError;
+	dtReal walkableHeight;
+	dtReal walkableRadius;
+	dtReal walkableClimb;
+	dtReal maxSimplificationError;
+	dtReal simplificationElevationRatio; // UE
 	int maxTiles;
 	int maxObstacles;
+//@UE BEGIN
+	dtReal detailSampleDist;
+	dtReal detailSampleMaxError;
+	int minRegionArea;
+	int mergeRegionArea;
+	int regionChunkSize;
+	int regionPartitioning;
+//@UE END
 };
 
 struct dtTileCacheMeshProcess
 {
-	virtual ~dtTileCacheMeshProcess();
-	virtual void process(struct dtNavMeshCreateParams* params, unsigned char* polyAreas, unsigned short* polyFlags) = 0;
+	virtual void markAreas(struct dtTileCacheLayer* layer, const dtReal* orig, const dtReal cs, const dtReal ch) = 0;
+	
+//@UE BEGIN Adding support for LWCoords.
+#if !DT_LARGE_WORLD_COORDINATES_DISABLED
+	// This function is deprecated use the version that uses dtReal
+	virtual void markAreas(struct dtTileCacheLayer* layer, const float* orig, const float cs, const float ch) final {};
+#endif // DT_LARGE_WORLD_COORDINATES_DISABLED
+//@UE END Adding support for LWCoords.
+
+	virtual void process(struct dtNavMeshCreateParams* params,
+						 unsigned char* polyAreas, unsigned short* polyFlags) = 0;
 };
+
 
 class dtTileCache
 {
 public:
-	dtTileCache();
-	~dtTileCache();
+	NAVMESH_API dtTileCache();
+	NAVMESH_API ~dtTileCache();
 	
 	struct dtTileCacheAlloc* getAlloc() { return m_talloc; }
 	struct dtTileCacheCompressor* getCompressor() { return m_tcomp; }
+	struct dtTileCacheMeshProcess* getProcessor() { return m_tmproc; }
 	const dtTileCacheParams* getParams() const { return &m_params; }
 	
 	inline int getTileCount() const { return m_params.maxTiles; }
@@ -114,54 +130,40 @@ public:
 	inline int getObstacleCount() const { return m_params.maxObstacles; }
 	inline const dtTileCacheObstacle* getObstacle(const int i) const { return &m_obstacles[i]; }
 	
-	const dtTileCacheObstacle* getObstacleByRef(dtObstacleRef ref);
+	NAVMESH_API const dtTileCacheObstacle* getObstacleByRef(dtObstacleRef ref);
 	
-	dtObstacleRef getObstacleRef(const dtTileCacheObstacle* obmin) const;
+	NAVMESH_API dtObstacleRef getObstacleRef(const dtTileCacheObstacle* obmin) const;
 	
-	dtStatus init(const dtTileCacheParams* params,
+	NAVMESH_API dtStatus init(const dtTileCacheParams* params,
 				  struct dtTileCacheAlloc* talloc,
 				  struct dtTileCacheCompressor* tcomp,
 				  struct dtTileCacheMeshProcess* tmproc);
 	
-	int getTilesAt(const int tx, const int ty, dtCompressedTileRef* tiles, const int maxTiles) const ;
+	NAVMESH_API int getTilesAt(const int tx, const int ty, dtCompressedTileRef* tiles, const int maxTiles) const ;
 	
-	dtCompressedTile* getTileAt(const int tx, const int ty, const int tlayer);
-	dtCompressedTileRef getTileRef(const dtCompressedTile* tile) const;
-	const dtCompressedTile* getTileByRef(dtCompressedTileRef ref) const;
+	NAVMESH_API dtCompressedTile* getTileAt(const int tx, const int ty, const int tlayer);
+	NAVMESH_API dtCompressedTileRef getTileRef(const dtCompressedTile* tile) const;
+	NAVMESH_API const dtCompressedTile* getTileByRef(dtCompressedTileRef ref) const;
 	
-	dtStatus addTile(unsigned char* data, const int dataSize, unsigned char flags, dtCompressedTileRef* result);
+	NAVMESH_API dtStatus addTile(unsigned char* data, const int dataSize, unsigned char flags, dtCompressedTileRef* result);
 	
-	dtStatus removeTile(dtCompressedTileRef ref, unsigned char** data, int* dataSize);
+	NAVMESH_API dtStatus removeTile(dtCompressedTileRef ref, unsigned char** data, int* dataSize);
 	
-	// Cylinder obstacle.
-	dtStatus addObstacle(const float* pos, const float radius, const float height, dtObstacleRef* result);
-
-	// Aabb obstacle.
-	dtStatus addBoxObstacle(const float* bmin, const float* bmax, dtObstacleRef* result);
-
-	// Box obstacle: can be rotated in Y.
-	dtStatus addBoxObstacle(const float* center, const float* halfExtents, const float yRadians, dtObstacleRef* result);
+	NAVMESH_API dtStatus addObstacle(const dtReal* pos, const dtReal radius, const dtReal height, dtObstacleRef* result);
+	NAVMESH_API dtStatus removeObstacle(const dtObstacleRef ref);
 	
-	dtStatus removeObstacle(const dtObstacleRef ref);
-	
-	dtStatus queryTiles(const float* bmin, const float* bmax,
+	NAVMESH_API dtStatus queryTiles(const dtReal* bmin, const dtReal* bmax,
 						dtCompressedTileRef* results, int* resultCount, const int maxResults) const;
 	
-	/// Updates the tile cache by rebuilding tiles touched by unfinished obstacle requests.
-	///  @param[in]		dt			The time step size. Currently not used.
-	///  @param[in]		navmesh		The mesh to affect when rebuilding tiles.
-	///  @param[out]	upToDate	Whether the tile cache is fully up to date with obstacle requests and tile rebuilds.
-	///  							If the tile cache is up to date another (immediate) call to update will have no effect;
-	///  							otherwise another call will continue processing obstacle requests and tile rebuilds.
-	dtStatus update(const float dt, class dtNavMesh* navmesh, bool* upToDate = 0);
+	NAVMESH_API dtStatus update(const dtReal /*dt*/, class dtNavMesh* navmesh);
 	
-	dtStatus buildNavMeshTilesAt(const int tx, const int ty, class dtNavMesh* navmesh);
+	NAVMESH_API dtStatus buildNavMeshTilesAt(const int tx, const int ty, class dtNavMesh* navmesh);
 	
-	dtStatus buildNavMeshTile(const dtCompressedTileRef ref, class dtNavMesh* navmesh);
+	NAVMESH_API dtStatus buildNavMeshTile(const dtCompressedTileRef ref, class dtNavMesh* navmesh);
 	
-	void calcTightTileBounds(const struct dtTileCacheLayerHeader* header, float* bmin, float* bmax) const;
+	NAVMESH_API void calcTightTileBounds(const struct dtTileCacheLayerHeader* header, dtReal* bmin, dtReal* bmax) const;
 	
-	void getObstacleBounds(const struct dtTileCacheObstacle* ob, float* bmin, float* bmax) const;
+	NAVMESH_API void getObstacleBounds(const struct dtTileCacheObstacle* ob, dtReal* bmin, dtReal* bmax) const;
 	
 
 	/// Encodes a tile id.
@@ -206,14 +208,11 @@ public:
 	
 	
 private:
-	// Explicitly disabled copy constructor and copy assignment operator.
-	dtTileCache(const dtTileCache&);
-	dtTileCache& operator=(const dtTileCache&);
-
+	
 	enum ObstacleRequestAction
 	{
 		REQUEST_ADD,
-		REQUEST_REMOVE
+		REQUEST_REMOVE,
 	};
 	
 	struct ObstacleRequest
@@ -248,9 +247,10 @@ private:
 	static const int MAX_UPDATE = 64;
 	dtCompressedTileRef m_update[MAX_UPDATE];
 	int m_nupdate;
+	
 };
 
-dtTileCache* dtAllocTileCache();
-void dtFreeTileCache(dtTileCache* tc);
+NAVMESH_API dtTileCache* dtAllocTileCache();
+NAVMESH_API void dtFreeTileCache(dtTileCache* tc);
 
 #endif

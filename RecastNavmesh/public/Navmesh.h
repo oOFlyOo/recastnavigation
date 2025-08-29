@@ -32,6 +32,8 @@
 #define DEFINE_LOG_CATEGORY_STATIC(CategoryName, DefaultVerbosity, CompileTimeVerbosity)
 #define DEFINE_LOG_CATEGORY(CategoryName)
 
+#define TRACE_CPUPROFILER_EVENT_SCOPE(Name) 
+
 #define UE_LOG(CategoryName, Verbosity, Format, ...)
 #define UE_CLOG(Condition, CategoryName, Verbosity, Format, ...)
 

@@ -11,7 +11,7 @@ class TFakeInlineAllocator
 	
 };
 
-#define TSimpleTArray TArray
+#define TArray TSimpleTArray
 template <int NumInlineElements>
 using TInlineAllocator = TFakeInlineAllocator<NumInlineElements>;
 
@@ -35,8 +35,9 @@ public:
 
 	InElementType& Emplace_GetRef();
 
+	void Add(const InElementType& Item);
+
 	InElementType& operator[](int Index);
 	const InElementType& operator[](int Index) const;
 };
-
 #endif

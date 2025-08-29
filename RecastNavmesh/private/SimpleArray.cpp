@@ -54,6 +54,18 @@ InElementType& TSimpleTArray<InElementType, InAllocatorType>::Emplace_GetRef()
 }
 
 template <typename InElementType, typename InAllocatorType>
+void TSimpleTArray<InElementType, InAllocatorType>::Add(const InElementType& Item)
+{
+	if (ArraySize >= ArrayCapacity)
+	{
+		Reserve(ArrayCapacity == 0 ? 4 : ArrayCapacity * 2);
+	}
+	Data[ArraySize++] = Item;
+}
+
+
+
+template <typename InElementType, typename InAllocatorType>
 InElementType& TSimpleTArray<InElementType, InAllocatorType>::operator[](int Index)
 {
 	return Data[Index];

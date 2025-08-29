@@ -23,6 +23,7 @@
 
 #include "Recast/Recast.h"
 #define _USE_MATH_DEFINES
+#include "SimpleStringAnsi.h"
 #include "Recast/RecastAlloc.h"
 #include "Recast/RecastAssert.h"
 
@@ -70,11 +71,7 @@ void rcContext::log(const rcLogCategory category, const char* format, ...)
 	char msg[MSG_SIZE];
 	va_list ap;
 	va_start(ap, format);
-#if RECAST_TODO
-	int len = 0;
-#else
 	int len = FCStringAnsi::GetVarArgs(msg, MSG_SIZE, format, ap);
-#endif
 	if (len >= MSG_SIZE)
 	{
 		len = MSG_SIZE-1;
