@@ -1,3 +1,6 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+// Modified version of Recast/Detour's source file
+
 //
 // Copyright (c) 2009-2010 Mikko Mononen memon@inside.org
 //
@@ -16,18 +19,15 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#include <string.h>
-#include <new>
-#include "DetourProximityGrid.h"
-#include "DetourCommon.h"
-#include "DetourMath.h"
-#include "DetourAlloc.h"
-#include "DetourAssert.h"
+#include "DetourCrowd/DetourProximityGrid.h"
+#include "Detour/DetourCommon.h"
+#include "Detour/DetourAlloc.h"
+#include "Detour/DetourAssert.h"
 
 
 dtProximityGrid* dtAllocProximityGrid()
 {
-	void* mem = dtAlloc(sizeof(dtProximityGrid), DT_ALLOC_PERM);
+	void* mem = dtAlloc(sizeof(dtProximityGrid), DT_ALLOC_PERM_PROXIMITY_GRID);
 	if (!mem) return 0;
 	return new(mem) dtProximityGrid;
 }
@@ -36,7 +36,7 @@ void dtFreeProximityGrid(dtProximityGrid* ptr)
 {
 	if (!ptr) return;
 	ptr->~dtProximityGrid();
-	dtFree(ptr);
+	dtFree(ptr, DT_ALLOC_PERM_PROXIMITY_GRID);
 }
 
 
@@ -48,7 +48,6 @@ inline int hashPos2(int x, int y, int n)
 
 dtProximityGrid::dtProximityGrid() :
 	m_cellSize(0),
-	m_invCellSize(0),
 	m_pool(0),
 	m_poolHead(0),
 	m_poolSize(0),
@@ -59,11 +58,11 @@ dtProximityGrid::dtProximityGrid() :
 
 dtProximityGrid::~dtProximityGrid()
 {
-	dtFree(m_buckets);
-	dtFree(m_pool);
+	dtFree(m_buckets, DT_ALLOC_PERM_PROXIMITY_GRID);
+	dtFree(m_pool, DT_ALLOC_PERM_PROXIMITY_GRID);
 }
 
-bool dtProximityGrid::init(const int poolSize, const float cellSize)
+bool dtProximityGrid::init(const int poolSize, const dtReal cellSize)
 {
 	dtAssert(poolSize > 0);
 	dtAssert(cellSize > 0.0f);
@@ -73,14 +72,14 @@ bool dtProximityGrid::init(const int poolSize, const float cellSize)
 	
 	// Allocate hashs buckets
 	m_bucketsSize = dtNextPow2(poolSize);
-	m_buckets = (unsigned short*)dtAlloc(sizeof(unsigned short)*m_bucketsSize, DT_ALLOC_PERM);
+	m_buckets = (unsigned short*)dtAlloc(sizeof(unsigned short)*m_bucketsSize, DT_ALLOC_PERM_PROXIMITY_GRID);
 	if (!m_buckets)
 		return false;
 	
 	// Allocate pool of items.
 	m_poolSize = poolSize;
 	m_poolHead = 0;
-	m_pool = (Item*)dtAlloc(sizeof(Item)*m_poolSize, DT_ALLOC_PERM);
+	m_pool = (Item*)dtAlloc(sizeof(Item)*m_poolSize, DT_ALLOC_PERM_PROXIMITY_GRID);
 	if (!m_pool)
 		return false;
 	
@@ -100,13 +99,13 @@ void dtProximityGrid::clear()
 }
 
 void dtProximityGrid::addItem(const unsigned short id,
-							  const float minx, const float miny,
-							  const float maxx, const float maxy)
+							  const dtReal minx, const dtReal miny,
+							  const dtReal maxx, const dtReal maxy)
 {
-	const int iminx = (int)dtMathFloorf(minx * m_invCellSize);
-	const int iminy = (int)dtMathFloorf(miny * m_invCellSize);
-	const int imaxx = (int)dtMathFloorf(maxx * m_invCellSize);
-	const int imaxy = (int)dtMathFloorf(maxy * m_invCellSize);
+	const int iminx = (int)dtFloor(minx * m_invCellSize);
+	const int iminy = (int)dtFloor(miny * m_invCellSize);
+	const int imaxx = (int)dtFloor(maxx * m_invCellSize);
+	const int imaxy = (int)dtFloor(maxy * m_invCellSize);
 	
 	m_bounds[0] = dtMin(m_bounds[0], iminx);
 	m_bounds[1] = dtMin(m_bounds[1], iminy);
@@ -133,14 +132,14 @@ void dtProximityGrid::addItem(const unsigned short id,
 	}
 }
 
-int dtProximityGrid::queryItems(const float minx, const float miny,
-								const float maxx, const float maxy,
+int dtProximityGrid::queryItems(const dtReal minx, const dtReal miny,
+								const dtReal maxx, const dtReal maxy,
 								unsigned short* ids, const int maxIds) const
 {
-	const int iminx = (int)dtMathFloorf(minx * m_invCellSize);
-	const int iminy = (int)dtMathFloorf(miny * m_invCellSize);
-	const int imaxx = (int)dtMathFloorf(maxx * m_invCellSize);
-	const int imaxy = (int)dtMathFloorf(maxy * m_invCellSize);
+	const int iminx = (int)dtFloor(minx * m_invCellSize);
+	const int iminy = (int)dtFloor(miny * m_invCellSize);
+	const int imaxx = (int)dtFloor(maxx * m_invCellSize);
+	const int imaxy = (int)dtFloor(maxy * m_invCellSize);
 	
 	int n = 0;
 	

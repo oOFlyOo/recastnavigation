@@ -1,3 +1,6 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+// Modified version of Recast/Detour's source file
+
 //
 // Copyright (c) 2009-2010 Mikko Mononen memon@inside.org
 //
@@ -19,141 +22,178 @@
 #ifndef DETOUROBSTACLEAVOIDANCE_H
 #define DETOUROBSTACLEAVOIDANCE_H
 
+#include "Navmesh.h"
+
+#include "CoreMinimal.h"
+#include "Detour/DetourLargeWorldCoordinates.h"
+
 struct dtObstacleCircle
 {
-	float p[3];				///< Position of the obstacle
-	float vel[3];			///< Velocity of the obstacle
-	float dvel[3];			///< Velocity of the obstacle
-	float rad;				///< Radius of the obstacle
-	float dp[3], np[3];		///< Use for side selection during sampling.
+	dtReal p[3];			///< Position of the obstacle
+	dtReal vel[3];			///< Velocity of the obstacle
+	dtReal dvel[3];			///< Velocity of the obstacle
+	dtReal rad;				///< Radius of the obstacle
+	dtReal dp[3], np[3];	///< Use for side selection during sampling.
 };
 
 struct dtObstacleSegment
 {
-	float p[3], q[3];		///< End points of the obstacle segment
-	bool touch;
+	dtReal p[3], q[3];		///< End points of the obstacle segment
+	unsigned char touch : 1;
+	unsigned char canIgnore : 1;
 };
-
 
 class dtObstacleAvoidanceDebugData
 {
 public:
-	dtObstacleAvoidanceDebugData();
-	~dtObstacleAvoidanceDebugData();
+	NAVMESH_API dtObstacleAvoidanceDebugData();
+	NAVMESH_API ~dtObstacleAvoidanceDebugData();
 	
-	bool init(const int maxSamples);
-	void reset();
-	void addSample(const float* vel, const float ssize, const float pen,
-				   const float vpen, const float vcpen, const float spen, const float tpen);
+	NAVMESH_API bool init(const int maxSamples);
+	NAVMESH_API void reset();
+	NAVMESH_API void addSample(const dtReal* vel, const dtReal ssize, const dtReal pen,
+				   const dtReal vpen, const dtReal vcpen, const dtReal spen, const dtReal tpen);
 	
-	void normalizeSamples();
+	NAVMESH_API void normalizeSamples();
 	
 	inline int getSampleCount() const { return m_nsamples; }
-	inline const float* getSampleVelocity(const int i) const { return &m_vel[i*3]; }
-	inline float getSampleSize(const int i) const { return m_ssize[i]; }
-	inline float getSamplePenalty(const int i) const { return m_pen[i]; }
-	inline float getSampleDesiredVelocityPenalty(const int i) const { return m_vpen[i]; }
-	inline float getSampleCurrentVelocityPenalty(const int i) const { return m_vcpen[i]; }
-	inline float getSamplePreferredSidePenalty(const int i) const { return m_spen[i]; }
-	inline float getSampleCollisionTimePenalty(const int i) const { return m_tpen[i]; }
+	inline const dtReal* getSampleVelocity(const int i) const { return &m_vel[i*3]; }
+	inline dtReal getSampleSize(const int i) const { return m_ssize[i]; }
+	inline dtReal getSamplePenalty(const int i) const { return m_pen[i]; }
+	inline dtReal getSampleDesiredVelocityPenalty(const int i) const { return m_vpen[i]; }
+	inline dtReal getSampleCurrentVelocityPenalty(const int i) const { return m_vcpen[i]; }
+	inline dtReal getSamplePreferredSidePenalty(const int i) const { return m_spen[i]; }
+	inline dtReal getSampleCollisionTimePenalty(const int i) const { return m_tpen[i]; }
 
 private:
-	// Explicitly disabled copy constructor and copy assignment operator.
-	dtObstacleAvoidanceDebugData(const dtObstacleAvoidanceDebugData&);
-	dtObstacleAvoidanceDebugData& operator=(const dtObstacleAvoidanceDebugData&);
-
 	int m_nsamples;
 	int m_maxSamples;
-	float* m_vel;
-	float* m_ssize;
-	float* m_pen;
-	float* m_vpen;
-	float* m_vcpen;
-	float* m_spen;
-	float* m_tpen;
+	dtReal* m_vel;
+	dtReal* m_ssize;
+	dtReal* m_pen;
+	dtReal* m_vpen;
+	dtReal* m_vcpen;
+	dtReal* m_spen;
+	dtReal* m_tpen;
 };
 
-dtObstacleAvoidanceDebugData* dtAllocObstacleAvoidanceDebugData();
-void dtFreeObstacleAvoidanceDebugData(dtObstacleAvoidanceDebugData* ptr);
+NAVMESH_API dtObstacleAvoidanceDebugData* dtAllocObstacleAvoidanceDebugData();
+NAVMESH_API void dtFreeObstacleAvoidanceDebugData(dtObstacleAvoidanceDebugData* ptr);
 
 
-static const int DT_MAX_PATTERN_DIVS = 32;	///< Max numver of adaptive divs.
-static const int DT_MAX_PATTERN_RINGS = 4;	///< Max number of adaptive rings.
+static const int DT_MAX_PATTERN_DIVS = 32;		///< Max numver of adaptive divs.
+static const int DT_MAX_PATTERN_RINGS = 4;		///< Max number of adaptive rings.
+static const int DT_MAX_CUSTOM_SAMPLES = 16;	///< Max number of custom samples in single pattern
 
 struct dtObstacleAvoidanceParams
 {
-	float velBias;
-	float weightDesVel;
-	float weightCurVel;
-	float weightSide;
-	float weightToi;
-	float horizTime;
-	unsigned char gridSize;	///< grid
+	dtReal velBias;
+	dtReal weightDesVel;
+	dtReal weightCurVel;
+	dtReal weightSide;
+	dtReal weightToi;
+	dtReal horizTime;
+	unsigned char patternIdx;	///< [UE] index of custom sampling pattern or 0xff for adaptive
 	unsigned char adaptiveDivs;	///< adaptive
 	unsigned char adaptiveRings;	///< adaptive
 	unsigned char adaptiveDepth;	///< adaptive
 };
 
+// [UE] custom sampling patterns
+struct dtObstacleAvoidancePattern
+{
+	dtReal angles[DT_MAX_CUSTOM_SAMPLES];	///< sample's angle (radians) from desired velocity direction
+	dtReal radii[DT_MAX_CUSTOM_SAMPLES];		///< sample's radius (0...1)
+	int nsamples;							///< Number of samples
+};
+
 class dtObstacleAvoidanceQuery
 {
 public:
-	dtObstacleAvoidanceQuery();
-	~dtObstacleAvoidanceQuery();
+	NAVMESH_API dtObstacleAvoidanceQuery();
+	NAVMESH_API ~dtObstacleAvoidanceQuery();
 	
-	bool init(const int maxCircles, const int maxSegments);
+	NAVMESH_API bool init(const int maxCircles, const int maxSegments, const int maxCustomPatterns);
 	
-	void reset();
+	NAVMESH_API void reset();
 
-	void addCircle(const float* pos, const float rad,
-				   const float* vel, const float* dvel);
+	NAVMESH_API void addCircle(const dtReal* pos, const dtReal rad,
+				   const dtReal* vel, const dtReal* dvel);
 				   
-	void addSegment(const float* p, const float* q);
+	NAVMESH_API void addSegment(const dtReal* p, const dtReal* q, int flags = 0);
 
-	int sampleVelocityGrid(const float* pos, const float rad, const float vmax,
-						   const float* vel, const float* dvel, float* nvel,
-						   const dtObstacleAvoidanceParams* params,
-						   dtObstacleAvoidanceDebugData* debug = 0);
+	// [UE] store new sampling pattern
+	NAVMESH_API bool setCustomSamplingPattern(int idx, const dtReal* angles, const dtReal* radii, int nsamples);
 
-	int sampleVelocityAdaptive(const float* pos, const float rad, const float vmax,
-							   const float* vel, const float* dvel, float* nvel,
+	// [UE] get custom sampling pattern
+	NAVMESH_API bool getCustomSamplingPattern(int idx, dtReal* angles, dtReal* radii, int* nsamples);
+
+	// [UE] sample velocity using custom patterns
+	NAVMESH_API int sampleVelocityCustom(const dtReal* pos, const dtReal rad,
+					 		 const dtReal vmax, const dtReal vmult,
+							 const dtReal* vel, const dtReal* dvel, dtReal* nvel,
+							 const dtObstacleAvoidanceParams* params,
+							 dtObstacleAvoidanceDebugData* debug = 0);
+
+	NAVMESH_API int sampleVelocityAdaptive(const dtReal* pos, const dtReal rad,
+							   const dtReal vmax, const dtReal vmult,
+							   const dtReal* vel, const dtReal* dvel, dtReal* nvel,
 							   const dtObstacleAvoidanceParams* params, 
 							   dtObstacleAvoidanceDebugData* debug = 0);
 	
+	// [UE] main sampling function
+	inline int sampleVelocity(const dtReal* pos, const dtReal rad,
+		const dtReal vmax, const dtReal vmult,
+		const dtReal* vel, const dtReal* dvel, dtReal* nvel,
+		const dtObstacleAvoidanceParams* params,
+		dtObstacleAvoidanceDebugData* debug = 0)
+	{
+		return (params->patternIdx == 0xff) ?
+			sampleVelocityAdaptive(pos, rad, vmax, vmult, vel, dvel, nvel, params, debug) :
+			sampleVelocityCustom(pos, rad, vmax, vmult, vel, dvel, nvel, params, debug);
+	}
+
 	inline int getObstacleCircleCount() const { return m_ncircles; }
 	const dtObstacleCircle* getObstacleCircle(const int i) { return &m_circles[i]; }
 
 	inline int getObstacleSegmentCount() const { return m_nsegments; }
 	const dtObstacleSegment* getObstacleSegment(const int i) { return &m_segments[i]; }
 
+	// [UE] sampling pattern count accessors
+	inline int getCustomPatternCount() const { return m_maxPatterns; }
+
 private:
-	// Explicitly disabled copy constructor and copy assignment operator.
-	dtObstacleAvoidanceQuery(const dtObstacleAvoidanceQuery&);
-	dtObstacleAvoidanceQuery& operator=(const dtObstacleAvoidanceQuery&);
 
-	void prepare(const float* pos, const float* dvel);
+	NAVMESH_API void prepare(const dtReal* pos, const dtReal* dvel);
 
-	float processSample(const float* vcand, const float cs,
-						const float* pos, const float rad,
-						const float* vel, const float* dvel,
-						const float minPenalty,
+	NAVMESH_API dtReal processSample(const dtReal* vcand, const dtReal cs,
+						const dtReal* pos, const dtReal rad,
+						const dtReal* vel, const dtReal* dvel,
 						dtObstacleAvoidanceDebugData* debug);
 
+	NAVMESH_API dtObstacleCircle* insertCircle(const dtReal dist);
+	NAVMESH_API dtObstacleSegment* insertSegment(const dtReal dist);
+
 	dtObstacleAvoidanceParams m_params;
-	float m_invHorizTime;
-	float m_vmax;
-	float m_invVmax;
+	dtReal m_invHorizTime;
+	dtReal m_vmax;
+	dtReal m_invVmax;
+
+	dtObstacleAvoidancePattern* m_customPatterns;
+	dtObstacleCircle* m_circles;
+	dtObstacleSegment* m_segments;
+
+	int m_maxPatterns;
 
 	int m_maxCircles;
-	dtObstacleCircle* m_circles;
 	int m_ncircles;
 
 	int m_maxSegments;
-	dtObstacleSegment* m_segments;
 	int m_nsegments;
 };
 
-dtObstacleAvoidanceQuery* dtAllocObstacleAvoidanceQuery();
-void dtFreeObstacleAvoidanceQuery(dtObstacleAvoidanceQuery* ptr);
+NAVMESH_API dtObstacleAvoidanceQuery* dtAllocObstacleAvoidanceQuery();
+NAVMESH_API void dtFreeObstacleAvoidanceQuery(dtObstacleAvoidanceQuery* ptr);
 
 
 #endif // DETOUROBSTACLEAVOIDANCE_H

@@ -10,6 +10,7 @@
 #include <new>
 #include <cmath>
 #include <cstdlib>
+#include <algorithm>
 
 #include <wchar.h>
 #include <stddef.h>
@@ -42,7 +43,9 @@
 #define check(expr)
 
 typedef signed int	 		int32;
+typedef unsigned int		uint32;
 typedef wchar_t				TCHAR;
+typedef unsigned char 		uint8;
 
 
 #ifdef NAVMESH_DLL

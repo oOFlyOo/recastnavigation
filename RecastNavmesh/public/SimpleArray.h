@@ -1,6 +1,9 @@
 #pragma once
 
 #if !RECAST_UNREAL_ENGINE
+
+#include <vector>
+
 /**
  * todo
  * @tparam NumInlineElements 
@@ -16,10 +19,10 @@ template <int NumInlineElements>
 using TInlineAllocator = TFakeInlineAllocator<NumInlineElements>;
 
 
-template <typename InElementType, typename InAllocatorType>
+template <typename ElementType, typename AllocatorType = TInlineAllocator<16>>
 class TSimpleTArray
 {
-	InElementType* Data = nullptr;
+	std::vector<ElementType> Data;
 	int ArraySize = 0;
 	int ArrayCapacity = 0;
 
@@ -33,11 +36,11 @@ public:
 
 	void Reserve(int NewCapacity);
 
-	InElementType& Emplace_GetRef();
+	ElementType& Emplace_GetRef();
 
-	void Add(const InElementType& Item);
+	void Add(const ElementType& Item);
 
-	InElementType& operator[](int Index);
-	const InElementType& operator[](int Index) const;
+	ElementType& operator[](int Index);
+	const ElementType& operator[](int Index) const;
 };
 #endif

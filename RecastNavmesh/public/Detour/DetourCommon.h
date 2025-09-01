@@ -22,6 +22,8 @@
 #ifndef DETOURCOMMON_H
 #define DETOURCOMMON_H
 
+#include "Navmesh.h"
+
 #include "CoreMinimal.h"
 #include "Detour/DetourLargeWorldCoordinates.h"
 #if RECAST_UNREAL_ENGINE

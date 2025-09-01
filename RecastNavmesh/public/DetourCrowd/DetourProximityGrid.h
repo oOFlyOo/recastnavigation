@@ -1,3 +1,6 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+// Modified version of Recast/Detour's source file
+
 //
 // Copyright (c) 2009-2010 Mikko Mononen memon@inside.org
 //
@@ -19,10 +22,13 @@
 #ifndef DETOURPROXIMITYGRID_H
 #define DETOURPROXIMITYGRID_H
 
+#include "CoreMinimal.h"
+#include "Detour/DetourLargeWorldCoordinates.h"
+
 class dtProximityGrid
 {
-	float m_cellSize;
-	float m_invCellSize;
+	dtReal m_cellSize;
+	dtReal m_invCellSize;
 	
 	struct Item
 	{
@@ -43,27 +49,22 @@ public:
 	dtProximityGrid();
 	~dtProximityGrid();
 	
-	bool init(const int poolSize, const float cellSize);
+	bool init(const int maxItems, const dtReal cellSize);
 	
 	void clear();
 	
 	void addItem(const unsigned short id,
-				 const float minx, const float miny,
-				 const float maxx, const float maxy);
+				 const dtReal minx, const dtReal miny,
+				 const dtReal maxx, const dtReal maxy);
 	
-	int queryItems(const float minx, const float miny,
-				   const float maxx, const float maxy,
+	int queryItems(const dtReal minx, const dtReal miny,
+				   const dtReal maxx, const dtReal maxy,
 				   unsigned short* ids, const int maxIds) const;
 	
 	int getItemCountAt(const int x, const int y) const;
 	
 	inline const int* getBounds() const { return m_bounds; }
-	inline float getCellSize() const { return m_cellSize; }
-
-private:
-	// Explicitly disabled copy constructor and copy assignment operator.
-	dtProximityGrid(const dtProximityGrid&);
-	dtProximityGrid& operator=(const dtProximityGrid&);
+	inline const dtReal getCellSize() const { return m_cellSize; }
 };
 
 dtProximityGrid* dtAllocProximityGrid();

@@ -1,3 +1,6 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+// Modified version of Recast/Detour's source file
+
 //
 // Copyright (c) 2009-2010 Mikko Mononen memon@inside.org
 //
@@ -16,19 +19,14 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#include <string.h>
-#include "DetourPathQueue.h"
-#include "DetourNavMesh.h"
-#include "DetourNavMeshQuery.h"
-#include "DetourAlloc.h"
-#include "DetourCommon.h"
+#include "DetourCrowd/DetourPathQueue.h"
 
 
 dtPathQueue::dtPathQueue() :
+	m_navquery(0),
 	m_nextHandle(1),
 	m_maxPathSize(0),
-	m_queueHead(0),
-	m_navquery(0)
+	m_queueHead(0)
 {
 	for (int i = 0; i < MAX_QUEUE; ++i)
 		m_queue[i].path = 0;
@@ -45,7 +43,7 @@ void dtPathQueue::purge()
 	m_navquery = 0;
 	for (int i = 0; i < MAX_QUEUE; ++i)
 	{
-		dtFree(m_queue[i].path);
+		dtFree(m_queue[i].path, DT_ALLOC_PERM_PATH_QUEUE);
 		m_queue[i].path = 0;
 	}
 }
@@ -64,7 +62,7 @@ bool dtPathQueue::init(const int maxPathSize, const int maxSearchNodeCount, dtNa
 	for (int i = 0; i < MAX_QUEUE; ++i)
 	{
 		m_queue[i].ref = DT_PATHQ_INVALID;
-		m_queue[i].path = (dtPolyRef*)dtAlloc(sizeof(dtPolyRef)*m_maxPathSize, DT_ALLOC_PERM);
+		m_queue[i].path = (dtPolyRef*)dtAlloc(sizeof(dtPolyRef)*m_maxPathSize, DT_ALLOC_PERM_PATH_QUEUE);
 		if (!m_queue[i].path)
 			return false;
 	}
@@ -107,11 +105,17 @@ void dtPathQueue::update(const int maxIters)
 			m_queueHead++;
 			continue;
 		}
-		
+
+#if RECAST_UNREAL_ENGINE
+		m_navquery->updateLinkFilter(q.linkFilter.Get());
+#else
+		m_navquery->updateLinkFilter(q.linkFilter.get());
+#endif
+
 		// Handle query start.
 		if (q.status == 0)
 		{
-			q.status = m_navquery->initSlicedFindPath(q.startRef, q.endRef, q.startPos, q.endPos, q.filter);
+			q.status = m_navquery->initSlicedFindPath(q.startRef, q.endRef, q.startPos, q.endPos, q.costLimit, q.requireNavigableEndLocation, q.filter); //@UE
 		}		
 		// Handle query in progress.
 		if (dtStatusInProgress(q.status))
@@ -133,8 +137,8 @@ void dtPathQueue::update(const int maxIters)
 }
 
 dtPathQueueRef dtPathQueue::request(dtPolyRef startRef, dtPolyRef endRef,
-									const float* startPos, const float* endPos,
-									const dtQueryFilter* filter)
+									const dtReal* startPos, const dtReal* endPos, const dtReal costLimit, const bool requireNavigableEndLocation, //@UE
+									const dtQueryFilter* filter, TSharedPtr<dtQuerySpecialLinkFilter> linkFilter)
 {
 	// Find empty slot
 	int slot = -1;
@@ -159,10 +163,13 @@ dtPathQueueRef dtPathQueue::request(dtPolyRef startRef, dtPolyRef endRef,
 	q.startRef = startRef;
 	dtVcopy(q.endPos, endPos);
 	q.endRef = endRef;
+	q.costLimit = costLimit; //@UE
+	q.requireNavigableEndLocation = requireNavigableEndLocation; //@UE
 	
 	q.status = 0;
 	q.npath = 0;
 	q.filter = filter;
+	q.linkFilter = linkFilter;
 	q.keepAlive = 0;
 	
 	return ref;
@@ -185,7 +192,6 @@ dtStatus dtPathQueue::getPathResult(dtPathQueueRef ref, dtPolyRef* path, int* pa
 		if (m_queue[i].ref == ref)
 		{
 			PathQuery& q = m_queue[i];
-			dtStatus details = q.status & DT_STATUS_DETAIL_MASK;
 			// Free request for reuse.
 			q.ref = DT_PATHQ_INVALID;
 			q.status = 0;
@@ -193,7 +199,7 @@ dtStatus dtPathQueue::getPathResult(dtPathQueueRef ref, dtPolyRef* path, int* pa
 			int n = dtMin(q.npath, maxPath);
 			memcpy(path, q.path, sizeof(dtPolyRef)*n);
 			*pathSize = n;
-			return details | DT_SUCCESS;
+			return DT_SUCCESS;
 		}
 	}
 	return DT_FAILURE;
