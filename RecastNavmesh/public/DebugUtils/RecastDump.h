@@ -1,3 +1,6 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+// Modified version of Recast/Detour's source file
+
 //
 // Copyright (c) 2009-2010 Mikko Mononen memon@inside.org
 //
@@ -19,9 +22,16 @@
 #ifndef RECAST_DUMP_H
 #define RECAST_DUMP_H
 
+#include "CoreMinimal.h"
+#if RECAST_UNREAL_ENGINE
+#include "HAL/PlatformCrt.h"
+#endif	
+
+class rcContext;
+
 struct duFileIO
 {
-	virtual ~duFileIO();
+	virtual ~duFileIO() = 0;
 	virtual bool isWriting() const = 0;
 	virtual bool isReading() const = 0;
 	virtual bool write(const void* ptr, const size_t size) = 0;
@@ -38,5 +48,6 @@ bool duDumpCompactHeightfield(struct rcCompactHeightfield& chf, duFileIO* io);
 bool duReadCompactHeightfield(struct rcCompactHeightfield& chf, duFileIO* io);
 
 void duLogBuildTimes(rcContext& ctx, const int totalTileUsec);
+
 
 #endif // RECAST_DUMP_H
