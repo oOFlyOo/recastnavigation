@@ -200,8 +200,16 @@ void rcAddSpan(rcContext* /*ctx*/, rcHeightfield& hf, const int x, const int y,
 	addSpan(hf, x,y, smin, smax, area, flagMergeThr);
 }
 
+#if !RECAST_UNREAL_ENGINE
+void rcAddSpan(rcContext* ctx, rcHeightfield& hf, const int x, const int y, const unsigned short smin,
+	const unsigned short smax, const unsigned char area, const int flagMergeThr)
+{
+	addSpan(hf, x,y, smin, smax, area, flagMergeThr);
+}
+#endif
+
 void rcAddSpans(rcContext* /*ctx*/, rcHeightfield& hf, const int flagMergeThr,
-				const rcSpanCache* cachedSpans, const int nspans)
+                const rcSpanCache* cachedSpans, const int nspans)
 {
 	const rcSpanCache* cachedInfo = cachedSpans;
 	for (int i = 0; i < nspans; i++, cachedInfo++)

@@ -40,6 +40,11 @@ public:
 
 	void Add(const ElementType& Item);
 
+	auto begin() noexcept { return Data.begin(); }
+    auto end() noexcept { return Data.end(); }
+    auto begin() const noexcept { return Data.begin(); }
+    auto end() const noexcept { return Data.end(); }
+
 	ElementType& operator[](int Index);
 	const ElementType& operator[](int Index) const;
 };

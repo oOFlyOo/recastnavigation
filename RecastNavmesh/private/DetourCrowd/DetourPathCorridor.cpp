@@ -59,11 +59,21 @@ int dtMergeCorridorStartMoved(dtPolyRef* path, const int npath, const int maxPat
 	int size = dtMax(0, npath-orig);
 	if (req+size > maxPath)
 		size = maxPath-req;
+	// 对比 1.6 Recast 的修改
+#if RECAST_UNREAL_ENGINE
 	if (size)
+#else
+	if (size > 0)
+#endif
 		memmove(path+req, path+orig, size*sizeof(dtPolyRef));
 	
 	// Store visited
+	// 对比 1.6 Recast 的修改
+#if RECAST_UNREAL_ENGINE
 	for (int i = 0; i < req; ++i)
+#else
+	for (int i = 0, n = dtMin(req, maxPath); i < n; ++i)
+#endif
 		path[i] = visited[(nvisited-1)-i];				
 	
 	return req+size;

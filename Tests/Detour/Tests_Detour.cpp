@@ -1,19 +1,23 @@
 #include "catch2/catch_all.hpp"
 
+#if RECAST_DEMO
+#include "Detour/DetourCommon.h"
+#else
 #include "DetourCommon.h"
+#endif
 
 TEST_CASE("dtRandomPointInConvexPoly")
 {
 	SECTION("Properly works when the argument 's' is 1.0f")
 	{
-		const float pts[] = {
+		const dtReal pts[] = {
 			0, 0, 0,
 			0, 0, 1,
 			1, 0, 0,
 		};
 		const int npts = 3;
-		float areas[6];
-		float out[3];
+		dtReal areas[6];
+		dtReal out[3];
 
 		dtRandomPointInConvexPoly(pts, npts, areas, 0.0f, 1.0f, out);
 		REQUIRE(out[0] == Catch::Approx(0));

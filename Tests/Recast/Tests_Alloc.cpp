@@ -3,8 +3,13 @@
 
 #include "catch2/catch_all.hpp"
 
+#if RECAST_DEMO
+#include "Recast/RecastAlloc.h"
+#include "Recast/RecastAssert.h"
+#else
 #include "RecastAlloc.h"
 #include "RecastAssert.h"
+#endif
 
 /// Used to verify that rcVector constructs/destroys objects correctly.
 struct Incrementor {
@@ -31,10 +36,17 @@ const int kMaxAllocSize = 1024;
 const unsigned char kClearValue = 0xff;
 
 /// Simple alloc/free that clears the memory on free..
+#if RECAST_UNREAL_ENGINE
 void* AllocAndInit(size_t size, rcAllocHint) {
 	rcAssert(kMaxAllocSize >= size);
 	return memset(malloc(kMaxAllocSize), 0, kMaxAllocSize);
 }
+#else
+void* AllocAndInit(int size, rcAllocHint) {
+	rcAssert(kMaxAllocSize >= size);
+	return memset(malloc(kMaxAllocSize), 0, kMaxAllocSize);
+}
+#endif
 
 void FreeAndClear(void* mem) {
 	if (mem) {

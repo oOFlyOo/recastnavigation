@@ -1,6 +1,11 @@
 #include "catch2/catch_all.hpp"
 
+#if RECAST_DEMO
+#include "Detour/DetourNavMesh.h"
+#include "DetourCrowd/DetourPathCorridor.h"
+#else
 #include "DetourPathCorridor.h"
+#endif
 
 TEST_CASE("dtMergeCorridorStartMoved")
 {

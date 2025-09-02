@@ -5,7 +5,7 @@
 #include "Navmesh.h"
 
 
-inline int SimpleStringAnsi::GetVarArgs(char* Dest, size_t DestSize, const char*& Fmt, va_list ArgPtr)
+int SimpleStringAnsi::GetVarArgs(char* Dest, size_t DestSize, const char*& Fmt, va_list ArgPtr)
 {
 	int32 Result = vsnprintf(Dest, DestSize, Fmt, ArgPtr);
 

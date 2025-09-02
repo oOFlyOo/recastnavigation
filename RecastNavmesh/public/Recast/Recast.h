@@ -413,6 +413,12 @@ struct rcTempSpan
 /// @ingroup recast
 struct rcHeightfield
 {
+	// 1.6 升级
+#if !RECAST_UNREAL_ENGINE
+	rcHeightfield();
+	~rcHeightfield();
+#endif
+
 	int width;			///< The width of the heightfield. (Along the x-axis in cell units.)
 	int height;			///< The height of the heightfield. (Along the z-axis in cell units.)
 	rcReal bmin[3];  	///< The minimum bounds in world space. [(x, y, z)]
@@ -427,6 +433,12 @@ struct rcHeightfield
 	rcEdgeHit* EdgeHits; ///< h + 1 bit flags that indicate what edges cross the z cell boundaries
 	rcRowExt* RowExt;		///< h structs that give the current x range for this z row
 	rcTempSpan* tempspans;		///< Heightfield of temp spans (width*height).
+#endif
+
+	// 1.6 升级
+#if !RECAST_UNREAL_ENGINE
+	rcHeightfield(const rcHeightfield&);
+	rcHeightfield& operator=(const rcHeightfield&);
 #endif
 };
 

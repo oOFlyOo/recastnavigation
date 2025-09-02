@@ -36,6 +36,8 @@ else()
 	target_compile_definitions(RecastNavmesh PUBLIC RECAST_TODO=0)
 endif()
 
+target_compile_definitions(RecastNavmesh PUBLIC NAVMESH_DLL)
+
 target_include_directories(RecastNavmesh PUBLIC
     "$<BUILD_INTERFACE:${RecastNavmesh_INCLUDE_DIR}>"
 )

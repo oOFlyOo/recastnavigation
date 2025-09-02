@@ -4,8 +4,13 @@
 
 #include "catch2/catch_all.hpp"
 
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#include "Recast/RecastAlloc.h"
+#else
 #include "Recast.h"
 #include "RecastAlloc.h"
+#endif
 
 TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 {
@@ -30,6 +35,17 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 	SECTION("Span with no spans above it is unchanged")
 	{
 		rcSpan* span = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+#if RECAST_DEMO
+		span->data.area = 1;
+		span->next = NULL;
+		span->data.smin = 0;
+		span->data.smax = 1;
+		heightfield.spans[0] = span;
+
+		rcFilterLowHangingWalkableObstacles(&context, walkableHeight, heightfield);
+
+		REQUIRE(heightfield.spans[0]->data.area == 1);
+#else
 		span->area = 1;
 		span->next = NULL;
 		span->smin = 0;
@@ -39,6 +55,7 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 		rcFilterLowHangingWalkableObstacles(&context, walkableHeight, heightfield);
 
 		REQUIRE(heightfield.spans[0]->area == 1);
+#endif
 
 		rcFree(span);
 	}
@@ -47,6 +64,36 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 	{
 		// Put the second span just above the first one.
 		rcSpan* secondSpan = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+#if RECAST_DEMO
+		secondSpan->data.area = RC_NULL_AREA;
+		secondSpan->next = NULL;
+		secondSpan->data.smin = 1 + walkableHeight;
+		secondSpan->data.smax = secondSpan->data.smin + 1;
+
+		rcSpan* span = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+		span->data.area = 1;
+		span->next = secondSpan;
+		span->data.smin = 0;
+		span->data.smax = 1;
+
+		heightfield.spans[0] = span;
+
+		rcFilterLowHangingWalkableObstacles(&context, walkableHeight, heightfield);
+
+		// Check that nothing has changed.
+		REQUIRE(heightfield.spans[0]->data.area == 1);
+		REQUIRE(heightfield.spans[0]->next->data.area == RC_NULL_AREA);
+
+		// Check again but with a more clearance
+		secondSpan->data.smin += 10;
+		secondSpan->data.smax += 10;
+
+		rcFilterLowHangingWalkableObstacles(&context, walkableHeight, heightfield);
+
+		// Check that nothing has changed.
+		REQUIRE(heightfield.spans[0]->data.area == 1);
+		REQUIRE(heightfield.spans[0]->next->data.area == RC_NULL_AREA);
+#else
 		secondSpan->area = RC_NULL_AREA;
 		secondSpan->next = NULL;
 		secondSpan->smin = 1 + walkableHeight;
@@ -75,6 +122,7 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 		// Check that nothing has changed.
 		REQUIRE(heightfield.spans[0]->area == 1);
 		REQUIRE(heightfield.spans[0]->next->area == RC_NULL_AREA);
+#endif
 
 		rcFree(span);
 		rcFree(secondSpan);
@@ -84,6 +132,26 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 	{
 		// Put the second span just above the first one.
 		rcSpan* secondSpan = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+#if RECAST_DEMO
+		secondSpan->data.area = RC_NULL_AREA;
+		secondSpan->next = NULL;
+		secondSpan->data.smin = 1 + (walkableHeight - 1);
+		secondSpan->data.smax = secondSpan->data.smin + 1;
+
+		rcSpan* span = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+		span->data.area = 1;
+		span->next = secondSpan;
+		span->data.smin = 0;
+		span->data.smax = 1;
+
+		heightfield.spans[0] = span;
+
+		rcFilterLowHangingWalkableObstacles(&context, walkableHeight, heightfield);
+
+		// Check that the second span was changed to walkable.
+		REQUIRE(heightfield.spans[0]->data.area == 1);
+		REQUIRE(heightfield.spans[0]->next->data.area == 1);
+#else
 		secondSpan->area = RC_NULL_AREA;
 		secondSpan->next = NULL;
 		secondSpan->smin = 1 + (walkableHeight - 1);
@@ -102,6 +170,7 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 		// Check that the second span was changed to walkable.
 		REQUIRE(heightfield.spans[0]->area == 1);
 		REQUIRE(heightfield.spans[0]->next->area == 1);
+#endif
 
 		rcFree(span);
 		rcFree(secondSpan);
@@ -111,6 +180,27 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 	{
 		// Put the second span just above the first one.
 		rcSpan* secondSpan = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+#if RECAST_DEMO
+		secondSpan->data.area = RC_NULL_AREA;
+		secondSpan->next = NULL;
+		secondSpan->data.smin = 2 + (walkableHeight - 1);
+		secondSpan->data.smax = secondSpan->data.smin + 1;
+
+		rcSpan* span = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+		span->data.area = 1;
+		span->next = secondSpan;
+		span->data.smin = 0;
+		span->data.smax = 1;
+
+		heightfield.spans[0] = span;
+
+		rcFilterLowHangingWalkableObstacles(&context, walkableHeight, heightfield);
+
+		// Check that the second span was changed to walkable.
+		REQUIRE(heightfield.spans[0]->data.area == 1);
+		REQUIRE(heightfield.spans[0]->next->data.area == RC_NULL_AREA);
+
+#else
 		secondSpan->area = RC_NULL_AREA;
 		secondSpan->next = NULL;
 		secondSpan->smin = 2 + (walkableHeight - 1);
@@ -129,6 +219,7 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 		// Check that the second span was changed to walkable.
 		REQUIRE(heightfield.spans[0]->area == 1);
 		REQUIRE(heightfield.spans[0]->next->area == RC_NULL_AREA);
+#endif
 
 		rcFree(span);
 		rcFree(secondSpan);
@@ -137,6 +228,36 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 	SECTION("Only the first of multiple, low obstacles are marked walkable")
 	{
 		rcSpan* span = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+#if RECAST_DEMO
+		span->data.area = 1;
+		span->next = NULL;
+		span->data.smin = 0;
+		span->data.smax = 1;
+		heightfield.spans[0] = span;
+
+		rcSpan* previousSpan = span;
+		for (int i = 0; i < 9; ++i)
+		{
+			rcSpan* nextSpan = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+			nextSpan->data.area = RC_NULL_AREA;
+			nextSpan->next = NULL;
+			nextSpan->data.smin = previousSpan->data.smax + (walkableHeight - 1);
+			nextSpan->data.smax = nextSpan->data.smin + 1;
+			previousSpan->next = nextSpan;
+			previousSpan = nextSpan;
+		}
+
+		rcFilterLowHangingWalkableObstacles(&context, walkableHeight, heightfield);
+
+		rcSpan* currentSpan = heightfield.spans[0];
+		for (int i = 0; i < 10; ++i)
+		{
+			REQUIRE(currentSpan != NULL);
+			// only the first and second spans should be marked as walkabl
+			REQUIRE(currentSpan->data.area == (i <= 1 ? 1 : RC_NULL_AREA));
+			currentSpan = currentSpan->next;
+		}
+#else
 		span->area = 1;
 		span->next = NULL;
 		span->smin = 0;
@@ -165,6 +286,7 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 			REQUIRE(currentSpan->area == (i <= 1 ? 1 : RC_NULL_AREA));
 			currentSpan = currentSpan->next;
 		}
+#endif
 
 		std::vector<rcSpan*> toFree;
 		span = heightfield.spans[0];
@@ -181,6 +303,7 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 	}
 }
 
+#if RECAST_UNREAL_ENGINE
 TEST_CASE("rcFilterLedgeSpans", "[recast, filtering]")
 {
 	rcContext context;
@@ -205,6 +328,44 @@ TEST_CASE("rcFilterLedgeSpans", "[recast, filtering]")
 	SECTION("Edge spans are marked unwalkable")
 	{
 		// Create a flat plane.
+#if RECAST_DEMO
+		for (int x = 0; x < heightfield.width; ++x)
+		{
+			for (int z = 0; z < heightfield.height; ++z)
+			{
+				rcSpan* span = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+				span->data.area = 1;
+				span->next = NULL;
+				span->data.smin = 0;
+				span->data.smax = 1;
+				heightfield.spans[x + z * heightfield.width] = span;
+			}
+		}
+
+		rcFilterLedgeSpans(&context, walkableHeight, walkableClimb, heightfield);
+
+		for (int x = 0; x < heightfield.width; ++x)
+		{
+			for (int z = 0; z < heightfield.height; ++z)
+			{
+				rcSpan* span = heightfield.spans[x + z * heightfield.width];
+				REQUIRE(span != NULL);
+
+				if (x == 0 || z == 0 || x == 9 || z == 9)
+				{
+					REQUIRE(span->data.area == RC_NULL_AREA);
+				}
+				else
+				{
+					REQUIRE(span->data.area == 1);
+				}
+
+				REQUIRE(span->next == NULL);
+				REQUIRE(span->data.smin == 0);
+				REQUIRE(span->data.smax == 1);
+			}
+		}
+#else
 		for (int x = 0; x < heightfield.width; ++x)
 		{
 			for (int z = 0; z < heightfield.height; ++z)
@@ -241,6 +402,7 @@ TEST_CASE("rcFilterLedgeSpans", "[recast, filtering]")
 				REQUIRE(span->smax == 1);
 			}
 		}
+#endif
 
 		// Free all the heightfield spans
 		for (int x = 0; x < heightfield.width; ++x)
@@ -252,6 +414,7 @@ TEST_CASE("rcFilterLedgeSpans", "[recast, filtering]")
 		}
 	}
 }
+#endif
 
 TEST_CASE("rcFilterWalkableLowHeightSpans", "[recast, filtering]")
 {
@@ -276,6 +439,17 @@ TEST_CASE("rcFilterWalkableLowHeightSpans", "[recast, filtering]")
 	SECTION("span nothing above is unchanged")
 	{
 		rcSpan* span = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+#if RECAST_DEMO
+		span->data.area = 1;
+		span->next = NULL;
+		span->data.smin = 0;
+		span->data.smax = 1;
+		heightfield.spans[0] = span;
+
+		rcFilterWalkableLowHeightSpans(&context, walkableHeight, heightfield);
+
+		REQUIRE(heightfield.spans[0]->data.area == 1);
+#else
 		span->area = 1;
 		span->next = NULL;
 		span->smin = 0;
@@ -285,6 +459,7 @@ TEST_CASE("rcFilterWalkableLowHeightSpans", "[recast, filtering]")
 		rcFilterWalkableLowHeightSpans(&context, walkableHeight, heightfield);
 
 		REQUIRE(heightfield.spans[0]->area == 1);
+#endif
 
 		rcFree(span);
 	}
@@ -292,6 +467,25 @@ TEST_CASE("rcFilterWalkableLowHeightSpans", "[recast, filtering]")
 	SECTION("span with lots of room above is unchanged")
 	{
 		rcSpan* overheadSpan = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+#if RECAST_DEMO
+		overheadSpan->data.area = RC_NULL_AREA;
+		overheadSpan->next = NULL;
+		overheadSpan->data.smin = 10;
+		overheadSpan->data.smax = 11;
+
+		rcSpan* span = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+		span->data.area = 1;
+		span->next = overheadSpan;
+		span->data.smin = 0;
+		span->data.smax = 1;
+		heightfield.spans[0] = span;
+
+		rcFilterWalkableLowHeightSpans(&context, walkableHeight, heightfield);
+
+		REQUIRE(heightfield.spans[0]->data.area == 1);
+		REQUIRE(heightfield.spans[0]->next->data.area == RC_NULL_AREA);
+
+#else
 		overheadSpan->area = RC_NULL_AREA;
 		overheadSpan->next = NULL;
 		overheadSpan->smin = 10;
@@ -308,6 +502,7 @@ TEST_CASE("rcFilterWalkableLowHeightSpans", "[recast, filtering]")
 
 		REQUIRE(heightfield.spans[0]->area == 1);
 		REQUIRE(heightfield.spans[0]->next->area == RC_NULL_AREA);
+#endif
 
 		rcFree(overheadSpan);
 		rcFree(span);
@@ -316,6 +511,24 @@ TEST_CASE("rcFilterWalkableLowHeightSpans", "[recast, filtering]")
 	SECTION("Span with low hanging obstacle is marked as unwalkable")
 	{
 		rcSpan* overheadSpan = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+#if RECAST_DEMO
+		overheadSpan->data.area = RC_NULL_AREA;
+		overheadSpan->next = NULL;
+		overheadSpan->data.smin = 3;
+		overheadSpan->data.smax = 4;
+
+		rcSpan* span = (rcSpan*)rcAlloc(sizeof(rcSpan), RC_ALLOC_PERM);
+		span->data.area = 1;
+		span->next = overheadSpan;
+		span->data.smin = 0;
+		span->data.smax = 1;
+		heightfield.spans[0] = span;
+
+		rcFilterWalkableLowHeightSpans(&context, walkableHeight, heightfield);
+
+		REQUIRE(heightfield.spans[0]->data.area == RC_NULL_AREA);
+		REQUIRE(heightfield.spans[0]->next->data.area == RC_NULL_AREA);
+#else
 		overheadSpan->area = RC_NULL_AREA;
 		overheadSpan->next = NULL;
 		overheadSpan->smin = 3;
@@ -332,6 +545,7 @@ TEST_CASE("rcFilterWalkableLowHeightSpans", "[recast, filtering]")
 
 		REQUIRE(heightfield.spans[0]->area == RC_NULL_AREA);
 		REQUIRE(heightfield.spans[0]->next->area == RC_NULL_AREA);
+#endif
 
 		rcFree(overheadSpan);
 		rcFree(span);

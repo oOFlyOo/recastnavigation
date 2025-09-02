@@ -3,9 +3,14 @@
 
 #include "catch2/catch_all.hpp"
 
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#include "Recast/RecastAlloc.h"
+#else
 #include "Recast.h"
 #include "RecastAlloc.h"
 #include "RecastAssert.h"
+#endif
 #include <vector>
 
 // TODO: Implement benchmarking for platforms other than posix.

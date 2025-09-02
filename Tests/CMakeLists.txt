@@ -1,5 +1,6 @@
-include_directories(../Detour/Include)
-include_directories(../Recast/Include)
+# include_directories(../Detour/Include)
+# include_directories(../Recast/Include)
+include_directories(../RecastNavmesh/public)
 
 add_executable(Tests
 	Detour/Tests_Detour.cpp

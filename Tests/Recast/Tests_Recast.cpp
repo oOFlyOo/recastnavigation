@@ -3,7 +3,11 @@
 
 #include "catch2/catch_all.hpp"
 
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#else
 #include "Recast.h"
+#endif
 
 TEST_CASE("rcSwap", "[recast]")
 {
@@ -96,9 +100,15 @@ TEST_CASE("rcVcross", "[recast]")
 {
 	SECTION("Computes cross product")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {3, -3, 1};
+		rcReal v2[3] = {4, 9, 2};
+		rcReal result[3];
+#else
 		float v1[3] = {3, -3, 1};
 		float v2[3] = {4, 9, 2};
 		float result[3];
+#endif
 		rcVcross(result, v1, v2);
 		REQUIRE(result[0] == Catch::Approx(-15));
 		REQUIRE(result[1] == Catch::Approx(-2));
@@ -107,8 +117,14 @@ TEST_CASE("rcVcross", "[recast]")
 
 	SECTION("Cross product with itself is zero")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {3, -3, 1};
+		rcReal result[3];
+#else
 		float v1[3] = {3, -3, 1};
 		float result[3];
+#endif
+
 		rcVcross(result, v1, v1);
 		REQUIRE(result[0] == Catch::Approx(0));
 		REQUIRE(result[1] == Catch::Approx(0));
@@ -120,15 +136,25 @@ TEST_CASE("rcVdot", "[recast]")
 {
 	SECTION("Dot normalized vector with itself")
 	{
+#if RECAST_DEMO
+		rcReal v1[] = { 1, 0, 0 };
+		rcReal result = rcVdot(v1, v1);
+#else
 		float v1[] = { 1, 0, 0 };
 		float result = rcVdot(v1, v1);
+#endif
 		REQUIRE(result == Catch::Approx(1));
 	}
 
 	SECTION("Dot zero vector with anything is zero")
 	{
+#if RECAST_DEMO
+		rcReal v1[] = { 1, 2, 3 };
+		rcReal v2[] = { 0, 0, 0 };
+#else
 		float v1[] = { 1, 2, 3 };
 		float v2[] = { 0, 0, 0 };
+#endif
 
 		float result = rcVdot(v1, v2);
 		REQUIRE(result == Catch::Approx(0));
@@ -139,9 +165,16 @@ TEST_CASE("rcVmad", "[recast]")
 {
 	SECTION("scaled add two vectors")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {1, 2, 3};
+		rcReal v2[3] = {0, 2, 4};
+		rcReal result[3];
+#else
 		float v1[3] = {1, 2, 3};
 		float v2[3] = {0, 2, 4};
 		float result[3];
+#endif
+
 		rcVmad(result, v1, v2, 2);
 		REQUIRE(result[0] == Catch::Approx(1));
 		REQUIRE(result[1] == Catch::Approx(6));
@@ -150,9 +183,16 @@ TEST_CASE("rcVmad", "[recast]")
 
 	SECTION("second vector is scaled, first is not")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {1, 2, 3};
+		rcReal v2[3] = {5, 6, 7};
+		rcReal result[3];
+#else
 		float v1[3] = {1, 2, 3};
 		float v2[3] = {5, 6, 7};
 		float result[3];
+#endif
+
 		rcVmad(result, v1, v2, 0);
 		REQUIRE(result[0] == Catch::Approx(1));
 		REQUIRE(result[1] == Catch::Approx(2));
@@ -164,9 +204,16 @@ TEST_CASE("rcVadd", "[recast]")
 {
 	SECTION("add two vectors")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {1, 2, 3};
+		rcReal v2[3] = {5, 6, 7};
+		rcReal result[3];
+#else
 		float v1[3] = {1, 2, 3};
 		float v2[3] = {5, 6, 7};
 		float result[3];
+#endif
+
 		rcVadd(result, v1, v2);
 		REQUIRE(result[0] == Catch::Approx(6));
 		REQUIRE(result[1] == Catch::Approx(8));
@@ -178,9 +225,16 @@ TEST_CASE("rcVsub", "[recast]")
 {
 	SECTION("subtract two vectors")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {5, 4, 3};
+		rcReal v2[3] = {1, 2, 3};
+		rcReal result[3];
+#else
 		float v1[3] = {5, 4, 3};
 		float v2[3] = {1, 2, 3};
 		float result[3];
+#endif
+
 		rcVsub(result, v1, v2);
 		REQUIRE(result[0] == Catch::Approx(4));
 		REQUIRE(result[1] == Catch::Approx(2));
@@ -192,8 +246,14 @@ TEST_CASE("rcVmin", "[recast]")
 {
 	SECTION("selects the min component from the vectors")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {5, 4, 0};
+		rcReal v2[3] = {1, 2, 9};
+#else
 		float v1[3] = {5, 4, 0};
 		float v2[3] = {1, 2, 9};
+#endif
+
 		rcVmin(v1, v2);
 		REQUIRE(v1[0] == Catch::Approx(1));
 		REQUIRE(v1[1] == Catch::Approx(2));
@@ -202,8 +262,14 @@ TEST_CASE("rcVmin", "[recast]")
 
 	SECTION("v1 is min")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {1, 2, 3};
+		rcReal v2[3] = {4, 5, 6};
+#else
 		float v1[3] = {1, 2, 3};
 		float v2[3] = {4, 5, 6};
+#endif
+
 		rcVmin(v1, v2);
 		REQUIRE(v1[0] == Catch::Approx(1));
 		REQUIRE(v1[1] == Catch::Approx(2));
@@ -212,8 +278,14 @@ TEST_CASE("rcVmin", "[recast]")
 
 	SECTION("v2 is min")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {4, 5, 6};
+		rcReal v2[3] = {1, 2, 3};
+#else
 		float v1[3] = {4, 5, 6};
 		float v2[3] = {1, 2, 3};
+#endif
+
 		rcVmin(v1, v2);
 		REQUIRE(v1[0] == Catch::Approx(1));
 		REQUIRE(v1[1] == Catch::Approx(2));
@@ -225,8 +297,14 @@ TEST_CASE("rcVmax", "[recast]")
 {
 	SECTION("selects the max component from the vectors")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {5, 4, 0};
+		rcReal v2[3] = {1, 2, 9};
+#else
 		float v1[3] = {5, 4, 0};
 		float v2[3] = {1, 2, 9};
+#endif
+
 		rcVmax(v1, v2);
 		REQUIRE(v1[0] == Catch::Approx(5));
 		REQUIRE(v1[1] == Catch::Approx(4));
@@ -235,8 +313,14 @@ TEST_CASE("rcVmax", "[recast]")
 
 	SECTION("v2 is max")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {1, 2, 3};
+		rcReal v2[3] = {4, 5, 6};
+#else
 		float v1[3] = {1, 2, 3};
 		float v2[3] = {4, 5, 6};
+#endif
+
 		rcVmax(v1, v2);
 		REQUIRE(v1[0] == Catch::Approx(4));
 		REQUIRE(v1[1] == Catch::Approx(5));
@@ -245,8 +329,14 @@ TEST_CASE("rcVmax", "[recast]")
 
 	SECTION("v1 is max")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {4, 5, 6};
+		rcReal v2[3] = {1, 2, 3};
+#else
 		float v1[3] = {4, 5, 6};
 		float v2[3] = {1, 2, 3};
+#endif
+
 		rcVmax(v1, v2);
 		REQUIRE(v1[0] == Catch::Approx(4));
 		REQUIRE(v1[1] == Catch::Approx(5));
@@ -258,8 +348,14 @@ TEST_CASE("rcVcopy", "[recast]")
 {
 	SECTION("copies a vector into another vector")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {5, 4, 0};
+		rcReal result[3] = {1, 2, 9};
+#else
 		float v1[3] = {5, 4, 0};
 		float result[3] = {1, 2, 9};
+#endif
+
 		rcVcopy(result, v1);
 		REQUIRE(result[0] == Catch::Approx(5));
 		REQUIRE(result[1] == Catch::Approx(4));
@@ -274,8 +370,14 @@ TEST_CASE("rcVdist", "[recast]")
 {
 	SECTION("distance between two vectors")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {3, 1, 3};
+		rcReal v2[3] = {1, 3, 1};
+#else
 		float v1[3] = {3, 1, 3};
 		float v2[3] = {1, 3, 1};
+#endif
+
 		float result = rcVdist(v1, v2);
 
 		REQUIRE(result == Catch::Approx(3.4641f));
@@ -283,8 +385,14 @@ TEST_CASE("rcVdist", "[recast]")
 
 	SECTION("Distance from zero is magnitude")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {3, 1, 3};
+		rcReal v2[3] = {0, 0, 0};
+#else
 		float v1[3] = {3, 1, 3};
 		float v2[3] = {0, 0, 0};
+#endif
+
 		float distance = rcVdist(v1, v2);
 		float magnitude = rcSqrt(rcSqr(v1[0]) + rcSqr(v1[1]) + rcSqr(v1[2]));
 		REQUIRE(distance == Catch::Approx(magnitude));
@@ -295,8 +403,13 @@ TEST_CASE("rcVdistSqr", "[recast]")
 {
 	SECTION("squared distance between two vectors")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {3, 1, 3};
+		rcReal v2[3] = {1, 3, 1};
+#else
 		float v1[3] = {3, 1, 3};
 		float v2[3] = {1, 3, 1};
+#endif
 		float result = rcVdistSqr(v1, v2);
 
 		REQUIRE(result == Catch::Approx(12));
@@ -304,8 +417,14 @@ TEST_CASE("rcVdistSqr", "[recast]")
 
 	SECTION("squared distance from zero is squared magnitude")
 	{
+#if RECAST_DEMO
+		rcReal v1[3] = {3, 1, 3};
+		rcReal v2[3] = {0, 0, 0};
+#else
 		float v1[3] = {3, 1, 3};
 		float v2[3] = {0, 0, 0};
+#endif
+
 		float distance = rcVdistSqr(v1, v2);
 		float magnitude = rcSqr(v1[0]) + rcSqr(v1[1]) + rcSqr(v1[2]);
 		REQUIRE(distance == Catch::Approx(magnitude));
@@ -316,7 +435,12 @@ TEST_CASE("rcVnormalize", "[recast]")
 {
 	SECTION("normalizing reduces magnitude to 1")
 	{
+#if RECAST_DEMO
+		rcReal v[3] = {3, 3, 3};
+#else
 		float v[3] = {3, 3, 3};
+#endif
+
 		rcVnormalize(v);
 		REQUIRE(v[0] == Catch::Approx(rcSqrt(1.0f / 3.0f)));
 		REQUIRE(v[1] == Catch::Approx(rcSqrt(1.0f / 3.0f)));
@@ -330,9 +454,16 @@ TEST_CASE("rcCalcBounds", "[recast]")
 {
 	SECTION("bounds of one vector")
 	{
+#if RECAST_DEMO
+		rcReal verts[] = {1, 2, 3};
+		rcReal bmin[3];
+		rcReal bmax[3];
+#else
 		float verts[] = {1, 2, 3};
 		float bmin[3];
 		float bmax[3];
+#endif
+
 		rcCalcBounds(verts, 1, bmin, bmax);
 
 		REQUIRE(bmin[0] == Catch::Approx(verts[0]));
@@ -346,12 +477,22 @@ TEST_CASE("rcCalcBounds", "[recast]")
 
 	SECTION("bounds of more than one vector")
 	{
+#if RECAST_DEMO
+		rcReal verts[] = {
+			1, 2, 3,
+			0, 2, 5
+		};
+		rcReal bmin[3];
+		rcReal bmax[3];
+#else
 		float verts[] = {
 			1, 2, 3,
 			0, 2, 5
 		};
 		float bmin[3];
 		float bmax[3];
+#endif
+
 		rcCalcBounds(verts, 2, bmin, bmax);
 
 		REQUIRE(bmin[0] == Catch::Approx(0));
@@ -368,12 +509,22 @@ TEST_CASE("rcCalcGridSize", "[recast]")
 {
 	SECTION("computes the size of an x & z axis grid")
 	{
+#if RECAST_DEMO
+		rcReal verts[] = {
+			1, 2, 3,
+			0, 2, 6
+		};
+		rcReal bmin[3];
+		rcReal bmax[3];
+#else
 		float verts[] = {
 			1, 2, 3,
 			0, 2, 6
 		};
 		float bmin[3];
 		float bmax[3];
+#endif
+
 		rcCalcBounds(verts, 2, bmin, bmax);
 
 		float cellSize = 1.5f;
@@ -392,12 +543,22 @@ TEST_CASE("rcCreateHeightfield", "[recast]")
 {
 	SECTION("create a heightfield")
 	{
+#if RECAST_DEMO
+		rcReal verts[] = {
+			1, 2, 3,
+			0, 2, 6
+		};
+		rcReal bmin[3];
+		rcReal bmax[3];
+#else
 		float verts[] = {
 			1, 2, 3,
 			0, 2, 6
 		};
 		float bmin[3];
 		float bmax[3];
+#endif
+
 		rcCalcBounds(verts, 2, bmin, bmax);
 
 		float cellSize = 1.5f;
@@ -409,6 +570,7 @@ TEST_CASE("rcCreateHeightfield", "[recast]")
 		rcCalcGridSize(bmin, bmax, cellSize, &width, &height);
 
 		rcHeightfield heightfield;
+		// rcHeightfield heightfield = *rcAllocHeightfield();
 
 		bool result = rcCreateHeightfield(0, heightfield, width, height, bmin, bmax, cellSize, cellHeight);
 
@@ -431,6 +593,8 @@ TEST_CASE("rcCreateHeightfield", "[recast]")
 		REQUIRE(heightfield.spans != 0);
 		REQUIRE(heightfield.pools == 0);
 		REQUIRE(heightfield.freelist == 0);
+
+		// rcFreeHeightField(&heightfield);
 	}
 }
 
@@ -438,11 +602,20 @@ TEST_CASE("rcMarkWalkableTriangles", "[recast]")
 {
 	rcContext* ctx = 0;
 	float walkableSlopeAngle = 45;
+#if RECAST_DEMO
+	rcReal verts[] = {
+		0, 0, 0,
+		1, 0, 0,
+		0, 0, -1
+	};
+#else
 	float verts[] = {
 		0, 0, 0,
 		1, 0, 0,
 		0, 0, -1
 	};
+#endif
+
 	int nv = 3;
 	int walkable_tri[] = { 0, 1, 2 };
 	int unwalkable_tri[] = { 0, 2, 1 };
@@ -480,11 +653,21 @@ TEST_CASE("rcClearUnwalkableTriangles", "[recast]")
 {
 	rcContext* ctx = 0;
 	float walkableSlopeAngle = 45;
+
+#if RECAST_DEMO
+	rcReal verts[] = {
+		0, 0, 0,
+		1, 0, 0,
+		0, 0, -1
+	};
+#else
 	float verts[] = {
 		0, 0, 0,
 		1, 0, 0,
 		0, 0, -1
 	};
+#endif
+
 	int nv = 3;
 	int walkable_tri[] = { 0, 1, 2 };
 	int unwalkable_tri[] = { 0, 2, 1 };
@@ -515,12 +698,22 @@ TEST_CASE("rcAddSpan", "[recast]")
 {
 	rcContext ctx(false);
 
+#if RECAST_DEMO
+	rcReal verts[] = {
+		1, 2, 3,
+		0, 2, 6
+	};
+	rcReal bmin[3];
+	rcReal bmax[3];
+#else
 	float verts[] = {
 		1, 2, 3,
 		0, 2, 6
 	};
 	float bmin[3];
 	float bmax[3];
+#endif
+
 	rcCalcBounds(verts, 2, bmin, bmax);
 
 	float cellSize = 1.5f;
@@ -543,16 +736,43 @@ TEST_CASE("rcAddSpan", "[recast]")
 
 	SECTION("Add a span to an empty heightfield.")
 	{
+#if RECAST_DEMO
+		rcAddSpan(&ctx, hf, x, y, smin, smax, area, flagMergeThr);
+		// REQUIRE(result);
+		REQUIRE(hf.spans[0] != 0);
+		REQUIRE(hf.spans[0]->data.smin == smin);
+		REQUIRE(hf.spans[0]->data.smax == smax);
+		REQUIRE(hf.spans[0]->data.area == area);
+#else
 		bool result = rcAddSpan(&ctx, hf, x, y, smin, smax, area, flagMergeThr);
 		REQUIRE(result);
 		REQUIRE(hf.spans[0] != 0);
-		REQUIRE(hf.spans[0]->smin == smin);
+		REQUIRE(hf.spans[0]->Data.smin == smin);
 		REQUIRE(hf.spans[0]->smax == smax);
 		REQUIRE(hf.spans[0]->area == area);
+#endif
 	}
 
 	SECTION("Add a span that gets merged with an existing span.")
 	{
+#if RECAST_DEMO
+		rcAddSpan(&ctx, hf, x, y, smin, smax, area, flagMergeThr);
+		// REQUIRE(result);
+		REQUIRE(hf.spans[0] != 0);
+		REQUIRE(hf.spans[0]->data.smin == smin);
+		REQUIRE(hf.spans[0]->data.smax == smax);
+		REQUIRE(hf.spans[0]->data.area == area);
+
+		smin = 1;
+		smax = 2;
+		rcAddSpan(&ctx, hf, x, y, smin, smax, area, flagMergeThr);
+		// REQUIRE(result);
+		REQUIRE(hf.spans[0] != 0);
+		REQUIRE(hf.spans[0]->data.smin == 0);
+		REQUIRE(hf.spans[0]->data.smax == 2);
+		REQUIRE(hf.spans[0]->data.area == area);
+
+#else
 		bool result = rcAddSpan(&ctx, hf, x, y, smin, smax, area, flagMergeThr);
 		REQUIRE(result);
 		REQUIRE(hf.spans[0] != 0);
@@ -568,12 +788,39 @@ TEST_CASE("rcAddSpan", "[recast]")
 		REQUIRE(hf.spans[0]->smin == 0);
 		REQUIRE(hf.spans[0]->smax == 2);
 		REQUIRE(hf.spans[0]->area == area);
+#endif
 	}
 
 	SECTION("Add a span that merges with two spans above and below.")
 	{
 		smin = 0;
 		smax = 1;
+#if RECAST_DEMO
+		rcAddSpan(&ctx, hf, x, y, smin, smax, area, flagMergeThr);
+		REQUIRE(hf.spans[0] != 0);
+		REQUIRE(hf.spans[0]->data.smin == smin);
+		REQUIRE(hf.spans[0]->data.smax == smax);
+		REQUIRE(hf.spans[0]->data.area == area);
+		REQUIRE(hf.spans[0]->next == 0);
+
+		smin = 2;
+		smax = 3;
+		rcAddSpan(&ctx, hf, x, y, smin, smax, area, flagMergeThr);
+		REQUIRE(hf.spans[0]->next != 0);
+		REQUIRE(hf.spans[0]->next->data.smin == smin);
+		REQUIRE(hf.spans[0]->next->data.smax == smax);
+		REQUIRE(hf.spans[0]->next->data.area == area);
+
+		smin = 1;
+		smax = 2;
+		rcAddSpan(&ctx, hf, x, y, smin, smax, area, flagMergeThr);
+		REQUIRE(hf.spans[0] != 0);
+		REQUIRE(hf.spans[0]->data.smin == 0);
+		REQUIRE(hf.spans[0]->data.smax == 3);
+		REQUIRE(hf.spans[0]->data.area == area);
+		REQUIRE(hf.spans[0]->next == 0);
+
+#else
 		REQUIRE(rcAddSpan(&ctx, hf, x, y, smin, smax, area, flagMergeThr));
 		REQUIRE(hf.spans[0] != 0);
 		REQUIRE(hf.spans[0]->smin == smin);
@@ -597,12 +844,22 @@ TEST_CASE("rcAddSpan", "[recast]")
 		REQUIRE(hf.spans[0]->smax == 3);
 		REQUIRE(hf.spans[0]->area == area);
 		REQUIRE(hf.spans[0]->next == 0);
+#endif
 	}
 }
 
 TEST_CASE("rcRasterizeTriangle", "[recast]")
 {
 	rcContext ctx;
+#if RECAST_DEMO
+	rcReal verts[] = {
+		0, 0, 0,
+		1, 0, 0,
+		0, 0, -1
+	};
+	rcReal bmin[3];
+	rcReal bmax[3];
+#else
 	float verts[] = {
 		0, 0, 0,
 		1, 0, 0,
@@ -610,6 +867,7 @@ TEST_CASE("rcRasterizeTriangle", "[recast]")
 	};
 	float bmin[3];
 	float bmax[3];
+#endif
 	rcCalcBounds(verts, 3, bmin, bmax);
 
 	float cellSize = .5f;
@@ -628,6 +886,30 @@ TEST_CASE("rcRasterizeTriangle", "[recast]")
 
 	SECTION("Rasterize a triangle")
 	{
+#if RECAST_DEMO
+		rcRasterizeTriangle(&ctx, &verts[0], &verts[3], &verts[6], area, solid, flagMergeThr);
+
+		REQUIRE(solid.spans[0 + 0 * width]);
+		REQUIRE(!solid.spans[1 + 0 * width]);
+		REQUIRE(solid.spans[0 + 1 * width]);
+		REQUIRE(solid.spans[1 + 1 * width]);
+
+		REQUIRE(solid.spans[0 + 0 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 0 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 0 * width]->data.area == area);
+		REQUIRE(!solid.spans[0 + 0 * width]->next);
+
+		REQUIRE(solid.spans[0 + 1 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 1 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 1 * width]->data.area == area);
+		REQUIRE(!solid.spans[0 + 1 * width]->next);
+
+		REQUIRE(solid.spans[1 + 1 * width]->data.smin == 0);
+		REQUIRE(solid.spans[1 + 1 * width]->data.smax == 1);
+		REQUIRE(solid.spans[1 + 1 * width]->data.area == area);
+		REQUIRE(!solid.spans[1 + 1 * width]->next);
+
+#else
 		REQUIRE(rcRasterizeTriangle(&ctx, &verts[0], &verts[3], &verts[6], area, solid, flagMergeThr));
 
 		REQUIRE(solid.spans[0 + 0 * width]);
@@ -649,6 +931,7 @@ TEST_CASE("rcRasterizeTriangle", "[recast]")
 		REQUIRE(solid.spans[1 + 1 * width]->smax == 1);
 		REQUIRE(solid.spans[1 + 1 * width]->area == area);
 		REQUIRE(!solid.spans[1 + 1 * width]->next);
+#endif
 	}
 }
 
@@ -662,21 +945,36 @@ TEST_CASE("rcRasterizeTriangle overlapping bb but non-overlapping triangle", "[r
     float cellHeight = 1;
     int width = 10;
     int height = 10;
+#if RECAST_DEMO
+    rcReal bmin[] = { 0, 0, 0 };
+    rcReal bmax[] = { 10, 10, 10 };
+#else
     float bmin[] = { 0, 0, 0 };
     float bmax[] = { 10, 10, 10 };
+#endif
     rcHeightfield heightfield;
     REQUIRE(rcCreateHeightfield(&ctx, heightfield, width, height, bmin, bmax, cellSize, cellHeight));
 
 	// rasterize a triangle outside of the heightfield.
     unsigned char area = 42;
     int flagMergeThr = 1;
-    float verts[] =
+#if RECAST_DEMO
+    rcReal verts[] =
+	{
+        -10.0, 5.5, -10.0,
+        -10.0, 5.5, 3,
+        3.0, 5.5, -10.0
+    };
+    rcRasterizeTriangle(&ctx, &verts[0], &verts[3], &verts[6], area, heightfield, flagMergeThr);
+#else
+	float verts[] =
 	{
         -10.0, 5.5, -10.0,
         -10.0, 5.5, 3,
         3.0, 5.5, -10.0
     };
     REQUIRE(rcRasterizeTriangle(&ctx, &verts[0], &verts[3], &verts[6], area, heightfield, flagMergeThr));
+#endif
     
 	// ensure that no spans were created
     for (int x = 0; x < width; ++x)
@@ -694,6 +992,19 @@ TEST_CASE("rcRasterizeTriangle smaller than half a voxel size in x", "[recast]")
 	SECTION("Skinny triangle along x axis")
 	{
 		rcContext ctx;
+#if RECAST_DEMO
+		rcReal verts[] = {
+			5, 0, 0.005f,
+			5, 0, -0.005f,
+			-5, 0, 0.005f,
+
+			-5, 0, 0.005f,
+			5, 0, -0.005f,
+			-5, 0, -0.005f,
+		};
+		rcReal bmin[3];
+		rcReal bmax[3];
+#else
 		float verts[] = {
 			5, 0, 0.005f,
 			5, 0, -0.005f,
@@ -705,6 +1016,7 @@ TEST_CASE("rcRasterizeTriangle smaller than half a voxel size in x", "[recast]")
 		};
 		float bmin[3];
 		float bmax[3];
+#endif
 		rcCalcBounds(verts, 3, bmin, bmax);
 
 		float cellSize = 1;
@@ -720,12 +1032,29 @@ TEST_CASE("rcRasterizeTriangle smaller than half a voxel size in x", "[recast]")
 
 		unsigned char areas[] = {42, 42};
 		int flagMergeThr = 1;
+#if RECAST_DEMO
+		rcRasterizeTriangles(&ctx, verts, areas, 2, solid, flagMergeThr);
+#else
 		REQUIRE(rcRasterizeTriangles(&ctx, verts, areas, 2, solid, flagMergeThr));
+#endif
 	}
 	
 	SECTION("Skinny triangle along z axis")
 	{
 		rcContext ctx;
+# if RECAST_DEMO
+		rcReal verts[] = {
+			0.005f, 0, 5,
+			-0.005f, 0, 5,
+			0.005f, 0, -5,
+
+			0.005f, 0, -5,
+			-0.005f, 0, 5,
+			-0.005f, 0, -5
+		};
+		rcReal bmin[3];
+		rcReal bmax[3];
+#else
 		float verts[] = {
 			0.005f, 0, 5,
 			-0.005f, 0, 5,
@@ -737,6 +1066,7 @@ TEST_CASE("rcRasterizeTriangle smaller than half a voxel size in x", "[recast]")
 		};
 		float bmin[3];
 		float bmax[3];
+#endif
 		rcCalcBounds(verts, 3, bmin, bmax);
 
 		float cellSize = 1;
@@ -752,13 +1082,35 @@ TEST_CASE("rcRasterizeTriangle smaller than half a voxel size in x", "[recast]")
 
 		unsigned char areas[] = {42, 42};
 		int flagMergeThr = 1;
+#if RECAST_DEMO
+		rcRasterizeTriangles(&ctx, verts, areas, 2, solid, flagMergeThr);
+#else
 		REQUIRE(rcRasterizeTriangles(&ctx, verts, areas, 2, solid, flagMergeThr));
+#endif
 	}
 }
 
 TEST_CASE("rcRasterizeTriangles", "[recast]")
 {
 	rcContext ctx;
+#if RECAST_DEMO
+	rcReal verts[] = {
+		0, 0, 0,
+		1, 0, 0,
+		0, 0, -1,
+		0, 0, 1
+	};
+	int tris[] = {
+		0, 1, 2,
+		0, 3, 1
+	};
+	unsigned char areas[] = {
+		1,
+		2
+	};
+	rcReal bmin[3];
+	rcReal bmax[3];
+#else
 	float verts[] = {
 		0, 0, 0,
 		1, 0, 0,
@@ -775,6 +1127,7 @@ TEST_CASE("rcRasterizeTriangles", "[recast]")
 	};
 	float bmin[3];
 	float bmax[3];
+#endif
 	rcCalcBounds(verts, 4, bmin, bmax);
 
 	float cellSize = .5f;
@@ -792,6 +1145,49 @@ TEST_CASE("rcRasterizeTriangles", "[recast]")
 
 	SECTION("Rasterize some triangles")
 	{
+		rcRasterizeTriangles(&ctx, verts, 4, tris, areas, 2, solid, flagMergeThr);
+
+		REQUIRE(solid.spans[0 + 0 * width]);
+		REQUIRE(solid.spans[0 + 1 * width]);
+		REQUIRE(solid.spans[0 + 2 * width]);
+		REQUIRE(solid.spans[0 + 3 * width]);
+		REQUIRE(!solid.spans[1 + 0 * width]);
+		REQUIRE(solid.spans[1 + 1 * width]);
+		REQUIRE(solid.spans[1 + 2 * width]);
+		REQUIRE(!solid.spans[1 + 3 * width]);
+
+		REQUIRE(solid.spans[0 + 0 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 0 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 0 * width]->data.area == 1);
+		REQUIRE(!solid.spans[0 + 0 * width]->next);
+
+		REQUIRE(solid.spans[0 + 1 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 1 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 1 * width]->data.area == 1);
+		REQUIRE(!solid.spans[0 + 1 * width]->next);
+
+		REQUIRE(solid.spans[0 + 2 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 2 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 2 * width]->data.area == 2);
+		REQUIRE(!solid.spans[0 + 2 * width]->next);
+
+		REQUIRE(solid.spans[0 + 3 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 3 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 3 * width]->data.area == 2);
+		REQUIRE(!solid.spans[0 + 3 * width]->next);
+
+		REQUIRE(solid.spans[1 + 1 * width]->data.smin == 0);
+		REQUIRE(solid.spans[1 + 1 * width]->data.smax == 1);
+		REQUIRE(solid.spans[1 + 1 * width]->data.area == 1);
+		REQUIRE(!solid.spans[1 + 1 * width]->next);
+
+		REQUIRE(solid.spans[1 + 2 * width]->data.smin == 0);
+		REQUIRE(solid.spans[1 + 2 * width]->data.smax == 1);
+		REQUIRE(solid.spans[1 + 2 * width]->data.area == 2);
+		REQUIRE(!solid.spans[1 + 2 * width]->next);
+#if RECAST_DEMO
+
+#else
 		REQUIRE(rcRasterizeTriangles(&ctx, verts, 4, tris, areas, 2, solid, flagMergeThr));
 
 		REQUIRE(solid.spans[0 + 0 * width]);
@@ -832,10 +1228,57 @@ TEST_CASE("rcRasterizeTriangles", "[recast]")
 		REQUIRE(solid.spans[1 + 2 * width]->smax == 1);
 		REQUIRE(solid.spans[1 + 2 * width]->area == 2);
 		REQUIRE(!solid.spans[1 + 2 * width]->next);
+#endif
 	}
 
 	SECTION("Unsigned short overload")
 	{
+#if RECAST_DEMO
+		unsigned short utris[] = {
+			0, 1, 2,
+			0, 3, 1
+		};
+		rcRasterizeTriangles(&ctx, verts, 4, utris, areas, 2, solid, flagMergeThr);
+
+		REQUIRE(solid.spans[0 + 0 * width]);
+		REQUIRE(solid.spans[0 + 1 * width]);
+		REQUIRE(solid.spans[0 + 2 * width]);
+		REQUIRE(solid.spans[0 + 3 * width]);
+		REQUIRE(!solid.spans[1 + 0 * width]);
+		REQUIRE(solid.spans[1 + 1 * width]);
+		REQUIRE(solid.spans[1 + 2 * width]);
+		REQUIRE(!solid.spans[1 + 3 * width]);
+
+		REQUIRE(solid.spans[0 + 0 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 0 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 0 * width]->data.area == 1);
+		REQUIRE(!solid.spans[0 + 0 * width]->next);
+
+		REQUIRE(solid.spans[0 + 1 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 1 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 1 * width]->data.area == 1);
+		REQUIRE(!solid.spans[0 + 1 * width]->next);
+
+		REQUIRE(solid.spans[0 + 2 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 2 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 2 * width]->data.area == 2);
+		REQUIRE(!solid.spans[0 + 2 * width]->next);
+
+		REQUIRE(solid.spans[0 + 3 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 3 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 3 * width]->data.area == 2);
+		REQUIRE(!solid.spans[0 + 3 * width]->next);
+
+		REQUIRE(solid.spans[1 + 1 * width]->data.smin == 0);
+		REQUIRE(solid.spans[1 + 1 * width]->data.smax == 1);
+		REQUIRE(solid.spans[1 + 1 * width]->data.area == 1);
+		REQUIRE(!solid.spans[1 + 1 * width]->next);
+
+		REQUIRE(solid.spans[1 + 2 * width]->data.smin == 0);
+		REQUIRE(solid.spans[1 + 2 * width]->data.smax == 1);
+		REQUIRE(solid.spans[1 + 2 * width]->data.area == 2);
+		REQUIRE(!solid.spans[1 + 2 * width]->next);
+#else
 		unsigned short utris[] = {
 			0, 1, 2,
 			0, 3, 1
@@ -880,10 +1323,63 @@ TEST_CASE("rcRasterizeTriangles", "[recast]")
 		REQUIRE(solid.spans[1 + 2 * width]->smax == 1);
 		REQUIRE(solid.spans[1 + 2 * width]->area == 2);
 		REQUIRE(!solid.spans[1 + 2 * width]->next);
+#endif
 	}
 
 	SECTION("Triangle list overload")
 	{
+#if RECAST_DEMO
+		rcReal vertsList[] = {
+			0, 0, 0,
+			1, 0, 0,
+			0, 0, -1,
+			0, 0, 0,
+			0, 0, 1,
+			1, 0, 0,
+		};
+
+		rcRasterizeTriangles(&ctx, vertsList, areas, 2, solid, flagMergeThr);
+
+		REQUIRE(solid.spans[0 + 0 * width]);
+		REQUIRE(solid.spans[0 + 1 * width]);
+		REQUIRE(solid.spans[0 + 2 * width]);
+		REQUIRE(solid.spans[0 + 3 * width]);
+		REQUIRE(!solid.spans[1 + 0 * width]);
+		REQUIRE(solid.spans[1 + 1 * width]);
+		REQUIRE(solid.spans[1 + 2 * width]);
+		REQUIRE(!solid.spans[1 + 3 * width]);
+
+		REQUIRE(solid.spans[0 + 0 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 0 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 0 * width]->data.area == 1);
+		REQUIRE(!solid.spans[0 + 0 * width]->next);
+
+		REQUIRE(solid.spans[0 + 1 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 1 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 1 * width]->data.area == 1);
+		REQUIRE(!solid.spans[0 + 1 * width]->next);
+
+		REQUIRE(solid.spans[0 + 2 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 2 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 2 * width]->data.area == 2);
+		REQUIRE(!solid.spans[0 + 2 * width]->next);
+
+		REQUIRE(solid.spans[0 + 3 * width]->data.smin == 0);
+		REQUIRE(solid.spans[0 + 3 * width]->data.smax == 1);
+		REQUIRE(solid.spans[0 + 3 * width]->data.area == 2);
+		REQUIRE(!solid.spans[0 + 3 * width]->next);
+
+		REQUIRE(solid.spans[1 + 1 * width]->data.smin == 0);
+		REQUIRE(solid.spans[1 + 1 * width]->data.smax == 1);
+		REQUIRE(solid.spans[1 + 1 * width]->data.area == 1);
+		REQUIRE(!solid.spans[1 + 1 * width]->next);
+
+		REQUIRE(solid.spans[1 + 2 * width]->data.smin == 0);
+		REQUIRE(solid.spans[1 + 2 * width]->data.smax == 1);
+		REQUIRE(solid.spans[1 + 2 * width]->data.area == 2);
+		REQUIRE(!solid.spans[1 + 2 * width]->next);
+
+#else
 		float vertsList[] = {
 			0, 0, 0,
 			1, 0, 0,
@@ -933,5 +1429,6 @@ TEST_CASE("rcRasterizeTriangles", "[recast]")
 		REQUIRE(solid.spans[1 + 2 * width]->smax == 1);
 		REQUIRE(solid.spans[1 + 2 * width]->area == 2);
 		REQUIRE(!solid.spans[1 + 2 * width]->next);
+#endif
 	}
 }

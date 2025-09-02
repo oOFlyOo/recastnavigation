@@ -108,6 +108,45 @@ void rcFreeHeightField(rcHeightfield* hf)
 	rcFree(hf);
 }
 
+// 1.6 升级
+#if !RECAST_UNREAL_ENGINE
+rcHeightfield::rcHeightfield()
+: width()
+, height()
+, bmin()
+, bmax()
+, cs()
+, ch()
+, spans()
+, pools()
+, freelist()
+, EdgeHits()
+, RowExt()
+, tempspans()
+{
+}
+
+rcHeightfield::~rcHeightfield()
+{
+	// Delete span array.
+	rcFree(spans);
+	// Delete span pools.
+	while (pools)
+	{
+		rcSpanPool* next = pools->next;
+		rcFree(pools);
+		pools = next;
+	}
+#if EPIC_ADDITION_USE_NEW_RECAST_RASTERIZER
+	rcFree(EdgeHits);
+	rcFree(RowExt);
+	rcFree(tempspans);
+#endif
+
+	// rcFreeHeightField(this);
+}
+#endif
+
 rcCompactHeightfield* rcAllocCompactHeightfield()
 {
 	rcCompactHeightfield* chf = (rcCompactHeightfield*)rcAlloc(sizeof(rcCompactHeightfield), RC_ALLOC_PERM);
