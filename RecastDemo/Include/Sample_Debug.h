@@ -20,8 +20,13 @@
 #define RECASTSAMPLEDEBUG_H
 
 #include "Sample.h"
+#if RECAST_DEMO
+#include "Detour/DetourNavMesh.h"
+#include "Recast/Recast.h"
+#else
 #include "DetourNavMesh.h"
 #include "Recast.h"
+#endif
 
 /// Sample used for random debugging.
 class Sample_Debug : public Sample
@@ -31,9 +36,15 @@ protected:
 	rcContourSet* m_cset;
 	rcPolyMesh* m_pmesh;
 
+#if RECAST_DEMO
+	float m_halfExtents[3];
+	float m_center[3];
+	dtReal m_bmin[3], m_bmax[3];
+#else
 	float m_halfExtents[3];
 	float m_center[3];
 	float m_bmin[3], m_bmax[3];
+#endif
 	dtPolyRef m_ref;
 	
 public:
@@ -43,15 +54,20 @@ public:
 	virtual void handleSettings();
 	virtual void handleTools();
 	virtual void handleDebugMode();
-	virtual void handleClick(const float* s, const float* p, bool shift);
+	virtual void handleClick(const dtReal* s, const dtReal* p, bool shift);
 	virtual void handleToggle();
 	virtual void handleRender();
 	virtual void handleRenderOverlay(double* proj, double* model, int* view);
 	virtual void handleMeshChanged(class InputGeom* geom);
 	virtual bool handleBuild();
 
+#if RECAST_DEMO
+	virtual const dtReal* getBoundsMin();
+	virtual const dtReal* getBoundsMax();
+#else
 	virtual const float* getBoundsMin();
 	virtual const float* getBoundsMax();
+#endif
 
 private:
 	// Explicitly disabled copy constructor and copy assignment operator.

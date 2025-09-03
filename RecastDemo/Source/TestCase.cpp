@@ -21,9 +21,15 @@
 #include <string.h>
 #include <math.h>
 #include "TestCase.h"
+#if RECAST_DEMO
+#include "Detour/DetourNavMesh.h"
+#include "Detour/DetourNavMeshQuery.h"
+#include "Detour/DetourCommon.h"
+#else
 #include "DetourNavMesh.h"
 #include "DetourNavMeshQuery.h"
 #include "DetourCommon.h"
+#endif
 #include "SDL.h"
 #include "SDL_opengl.h"
 #ifdef __APPLE__
@@ -204,7 +210,11 @@ void TestCase::doTests(dtNavMesh* navmesh, dtNavMeshQuery* navquery)
 	static const int MAX_POLYS = 256;
 	dtPolyRef polys[MAX_POLYS];
 	float straight[MAX_POLYS*3];
+#if RECAST_DEMO
+	const dtReal polyPickExt[3] = {2,4,2};
+#else
 	const float polyPickExt[3] = {2,4,2};
+#endif
 	
 	for (Test* iter = m_tests; iter; iter = iter->next)
 	{
@@ -237,7 +247,15 @@ void TestCase::doTests(dtNavMesh* navmesh, dtNavMeshQuery* navquery)
 			// Find path
 			TimeVal findPathStart = getPerfTime();
 
+#if RECAST_DEMO
+			const float CostLimit = FLT_MAX;
+			dtQueryResult Result;
+
+			navquery->findPath(startRef, endRef, iter->spos, iter->epos, CostLimit, &filter, Result, nullptr);
+#else
 			navquery->findPath(startRef, endRef, iter->spos, iter->epos, &filter, polys, &iter->npolys, MAX_POLYS);
+#endif
+
 			
 			TimeVal findPathEnd = getPerfTime();
 			iter->findPathTime += getPerfTimeUsec(findPathEnd - findPathStart);
@@ -246,9 +264,17 @@ void TestCase::doTests(dtNavMesh* navmesh, dtNavMeshQuery* navquery)
 			if (iter->npolys)
 			{
 				TimeVal findStraightPathStart = getPerfTime();
-				
+
+#if RECAST_DEMO
+				dtQueryResult findStraightPathResult;
+				navquery->findStraightPath(iter->spos, iter->epos, polys, iter->npolys,
+											 findStraightPathResult);
+#else
 				navquery->findStraightPath(iter->spos, iter->epos, polys, iter->npolys,
 										   straight, 0, 0, &iter->nstraight, MAX_POLYS);
+#endif
+
+				
 				TimeVal findStraightPathEnd = getPerfTime();
 				iter->findStraightPathTime += getPerfTimeUsec(findStraightPathEnd - findStraightPathStart);
 			}
@@ -261,16 +287,27 @@ void TestCase::doTests(dtNavMesh* navmesh, dtNavMeshQuery* navquery)
 			}
 			if (iter->nstraight)
 			{
+#if RECAST_DEMO
+				iter->straight = new dtReal[iter->nstraight*3];
+#else
 				iter->straight = new float[iter->nstraight*3];
+#endif
 				memcpy(iter->straight, straight, sizeof(float)*3*iter->nstraight);
 			}
 		}
 		else if (iter->type == TEST_RAYCAST)
 		{
+#if RECAST_DEMO
+			dtReal t = 0;
+			dtReal hitNormal[3], hitPos[3];
+
+			iter->straight = new dtReal[2*3];
+#else
 			float t = 0;
 			float hitNormal[3], hitPos[3];
-			
+
 			iter->straight = new float[2*3];
+#endif
 			iter->nstraight = 2;
 			
 			iter->straight[0] = iter->spos[0];
@@ -297,7 +334,11 @@ void TestCase::doTests(dtNavMesh* navmesh, dtNavMeshQuery* navquery)
 			// Adjust height.
 			if (iter->npolys > 0)
 			{
+#if RECAST_DEMO
+				dtReal h = 0;
+#else
 				float h = 0;
+#endif
 				navquery->getPolyHeight(polys[iter->npolys-1], hitPos, &h);
 				hitPos[1] = h;
 			}
@@ -331,7 +372,11 @@ void TestCase::handleRender()
 	glBegin(GL_LINES);
 	for (Test* iter = m_tests; iter; iter = iter->next)
 	{
+#if RECAST_DEMO
+		dtReal dir[3];
+#else
 		float dir[3];
+#endif
 		dtVsub(dir, iter->epos, iter->spos);
 		dtVnormalize(dir);
 		glColor4ub(128,25,0,192);
@@ -394,7 +439,11 @@ bool TestCase::handleRenderOverlay(double* proj, double* model, int* view)
 
 	for (Test* iter = m_tests; iter; iter = iter->next)
 	{
+#if RECAST_DEMO
+		dtReal pt[3], dir[3];
+#else
 		float pt[3], dir[3];
+#endif
 		if (iter->nstraight)
 		{
 			dtVcopy(pt, &iter->straight[3]);

@@ -20,8 +20,13 @@
 #define RECASTSAMPLETILEMESH_H
 
 #include "Sample.h"
+#if RECAST_DEMO
+#include "Detour/DetourNavMesh.h"
+#include "Recast/Recast.h"
+#else
 #include "DetourNavMesh.h"
 #include "Recast.h"
+#endif
 #include "ChunkyTriMesh.h"
 
 class Sample_TileMesh : public Sample
@@ -69,13 +74,22 @@ protected:
 	float m_tileSize;
 	
 	unsigned int m_tileCol;
+#if RECAST_DEMO
+	dtReal m_lastBuiltTileBmin[3];
+	dtReal m_lastBuiltTileBmax[3];
+#else
 	float m_lastBuiltTileBmin[3];
 	float m_lastBuiltTileBmax[3];
+#endif
 	float m_tileBuildTime;
 	float m_tileMemUsage;
 	int m_tileTriCount;
 
+#if RECAST_DEMO
+	unsigned char* buildTileMesh(const int tx, const int ty, const dtReal* bmin, const dtReal* bmax, int& dataSize);
+#else
 	unsigned char* buildTileMesh(const int tx, const int ty, const float* bmin, const float* bmax, int& dataSize);
+#endif
 	
 	void cleanup();
 	
@@ -94,11 +108,18 @@ public:
 	virtual void handleMeshChanged(class InputGeom* geom);
 	virtual bool handleBuild();
 	virtual void collectSettings(struct BuildSettings& settings);
+
+#if RECAST_DEMO
+	void getTilePos(const dtReal* pos, int& tx, int& ty);
 	
+	void buildTile(const dtReal* pos);
+	void removeTile(const dtReal* pos);
+#else
 	void getTilePos(const float* pos, int& tx, int& ty);
 	
 	void buildTile(const float* pos);
 	void removeTile(const float* pos);
+#endif
 	void buildAllTiles();
 	void removeAllTiles();
 

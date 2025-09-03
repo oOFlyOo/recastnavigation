@@ -21,6 +21,8 @@
 
 #include <string>
 
+#include "Detour/DetourLargeWorldCoordinates.h"
+
 class rcMeshLoaderObj
 {
 public:
@@ -29,8 +31,13 @@ public:
 	
 	bool load(const std::string& fileName);
 
+#if RECAST_DEMO
+	const dtReal* getVerts() const { return m_verts; }
+	const dtReal* getNormals() const { return m_normals; }
+#else
 	const float* getVerts() const { return m_verts; }
 	const float* getNormals() const { return m_normals; }
+#endif
 	const int* getTris() const { return m_tris; }
 	int getVertCount() const { return m_vertCount; }
 	int getTriCount() const { return m_triCount; }
@@ -45,10 +52,18 @@ private:
 	void addTriangle(int a, int b, int c, int& cap);
 	
 	std::string m_filename;
-	float m_scale;	
+	float m_scale;
+#if RECAST_DEMO
+	dtReal* m_verts;
+#else
 	float* m_verts;
+#endif
 	int* m_tris;
+#if RECAST_DEMO
+	dtReal* m_normals;
+#else
 	float* m_normals;
+#endif
 	int m_vertCount;
 	int m_triCount;
 };

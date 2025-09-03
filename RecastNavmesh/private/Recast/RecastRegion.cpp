@@ -1450,6 +1450,18 @@ bool rcGatherRegionsNoFilter(rcContext* ctx, rcCompactHeightfield& chf, const rc
 	return true;
 }
 
+// 1.6 兼容
+#if !RECAST_UNREAL_ENGINE
+bool rcBuildRegions(rcContext* ctx, rcCompactHeightfield& chf,
+					const int borderSize, const int minRegionArea, const int mergeRegionArea)
+{
+	rcBorderSize Size;
+	Size.low = borderSize;
+	Size.high = borderSize;
+	return rcBuildRegions(ctx, chf, Size, minRegionArea, mergeRegionArea);
+}
+#endif
+
 /// @par
 /// 
 /// Non-null regions will consist of connected, non-overlapping walkable spans that form a single contour.

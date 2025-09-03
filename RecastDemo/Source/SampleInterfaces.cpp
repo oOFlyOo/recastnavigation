@@ -2,9 +2,16 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "SampleInterfaces.h"
+
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#include "DebugUtils/RecastDebugDraw.h"
+#include "DebugUtils/DetourDebugDraw.h"
+#else
 #include "Recast.h"
 #include "RecastDebugDraw.h"
 #include "DetourDebugDraw.h"
+#endif
 #include "PerfTimer.h"
 #include "SDL.h"
 #include "SDL_opengl.h"
@@ -225,30 +232,43 @@ void DebugDrawGL::begin(duDebugDrawPrimitives prim, float size)
 	};
 }
 
-void DebugDrawGL::vertex(const float* pos, unsigned int color)
+void DebugDrawGL::vertex(const duReal* pos, unsigned int color)
 {
 	glColor4ubv((GLubyte*)&color);
+#if DU_LARGE_WORLD_COORDINATES_DISABLED
 	glVertex3fv(pos);
+#else
+	glVertex3dv(pos);
+#endif
 }
 
-void DebugDrawGL::vertex(const float x, const float y, const float z, unsigned int color)
+void DebugDrawGL::vertex(const duReal x, const duReal y, const duReal z, unsigned int color)
 {
 	glColor4ubv((GLubyte*)&color);
 	glVertex3f(x,y,z);
 }
 
-void DebugDrawGL::vertex(const float* pos, unsigned int color, const float* uv)
+void DebugDrawGL::vertex(const duReal* pos, unsigned int color, const duReal* uv)
 {
 	glColor4ubv((GLubyte*)&color);
+#if DU_LARGE_WORLD_COORDINATES_DISABLED
 	glTexCoord2fv(uv);
 	glVertex3fv(pos);
+#else
+	glTexCoord2dv(uv);
+	glVertex3dv(pos);
+#endif
 }
 
-void DebugDrawGL::vertex(const float x, const float y, const float z, unsigned int color, const float u, const float v)
+void DebugDrawGL::vertex(const duReal x, const duReal y, const duReal z, unsigned int color, const duReal u, const duReal v)
 {
 	glColor4ubv((GLubyte*)&color);
 	glTexCoord2f(u,v);
 	glVertex3f(x,y,z);
+}
+
+void DebugDrawGL::text(const duReal x, const duReal y, const duReal z, const char* text)
+{
 }
 
 void DebugDrawGL::end()

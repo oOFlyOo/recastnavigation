@@ -44,7 +44,9 @@
 #include "SimplePointer.h"
 #endif
 
+#if RECAST_UNREAL_ENGINE
 class FString;
+#endif
 class dtProximityGrid;
 
 /// The maximum number of neighbors that a crowd agent can take into account
@@ -236,7 +238,9 @@ struct dtCrowdAgentDebugInfo
 	int idx;
 	dtReal optStart[3], optEnd[3];
 	dtObstacleAvoidanceDebugData* vod;
+#if RECAST_UNREAL_ENGINE
 	TMap<int32, FString> agentLog;
+#endif
 };
 
 /// Provides local steering behaviors for a group of agents. 

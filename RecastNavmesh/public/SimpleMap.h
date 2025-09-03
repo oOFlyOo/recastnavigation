@@ -1,4 +1,3 @@
-
 #pragma once
 
 #if !RECAST_UNREAL_ENGINE
@@ -7,14 +6,21 @@
 
 #define TMap TSimpleMap
 
-template<typename KeyType, typename ValueType>
+template <typename KeyType, typename ValueType>
 class TSimpleMap
 {
 	std::unordered_map<ValueType, ValueType> Data;
 
 public:
-	void Reset();
-	ValueType FindRef(KeyType Key) const;
+	void Reset()
+	{
+		Data.clear();
+	}
+
+	ValueType FindRef(KeyType Key) const
+	{
+		return Data.find(Key);
+	}
 };
 
 #endif

@@ -20,6 +20,8 @@
 #define NAVMESHPRUNETOOL_H
 
 #include "Sample.h"
+#include "Detour/DetourLargeWorldCoordinates.h"
+#include "Recast/RecastLargeWorldCoordinates.h"
 
 // Prune navmesh to accessible locations from a point.
 
@@ -29,7 +31,11 @@ class NavMeshPruneTool : public SampleTool
 	
 	class NavmeshFlags* m_flags;
 
+#if RECAST_DEMO
+	dtReal m_hitPos[3];
+#else
 	float m_hitPos[3];
+#endif
 	bool m_hitPosSet;
 	
 public:
@@ -40,7 +46,7 @@ public:
 	virtual void init(Sample* sample);
 	virtual void reset();
 	virtual void handleMenu();
-	virtual void handleClick(const float* s, const float* p, bool shift);
+	virtual void handleClick(const rcReal* s, const rcReal* p, bool shift);
 	virtual void handleToggle();
 	virtual void handleStep();
 	virtual void handleUpdate(const float dt);

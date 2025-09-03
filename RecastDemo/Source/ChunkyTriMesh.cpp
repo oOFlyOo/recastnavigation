@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "Detour/DetourLargeWorldCoordinates.h"
+
 struct BoundsItem
 {
 	float bmin[2];
@@ -139,8 +141,13 @@ static void subdivide(BoundsItem* items, int nitems, int imin, int imax, int tri
 	}
 }
 
+#if RECAST_DEMO
+bool rcCreateChunkyTriMesh(const dtReal* verts, const int* tris, int ntris,
+						   int trisPerChunk, rcChunkyTriMesh* cm)
+#else
 bool rcCreateChunkyTriMesh(const float* verts, const int* tris, int ntris,
 						   int trisPerChunk, rcChunkyTriMesh* cm)
+#endif
 {
 	int nchunks = (ntris + trisPerChunk-1) / trisPerChunk;
 
@@ -169,7 +176,11 @@ bool rcCreateChunkyTriMesh(const float* verts, const int* tris, int ntris,
 		it.bmin[1] = it.bmax[1] = verts[t[0]*3+2];
 		for (int j = 1; j < 3; ++j)
 		{
+#if RECAST_DEMO
+			const dtReal* v = &verts[t[j]*3];
+#else
 			const float* v = &verts[t[j]*3];
+#endif
 			if (v[0] < it.bmin[0]) it.bmin[0] = v[0]; 
 			if (v[2] < it.bmin[1]) it.bmin[1] = v[2]; 
 

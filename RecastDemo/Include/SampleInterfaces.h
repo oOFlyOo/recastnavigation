@@ -19,9 +19,15 @@
 #ifndef SAMPLEINTERFACES_H
 #define SAMPLEINTERFACES_H
 
+#if RECAST_DEMO
+#include "DebugUtils/DebugDraw.h"
+#include "Recast/Recast.h"
+#include "DebugUtils/RecastDump.h"
+#else
 #include "DebugDraw.h"
 #include "Recast.h"
 #include "RecastDump.h"
+#endif
 #include "PerfTimer.h"
 
 // These are example implementations of various interfaces used in Recast and Detour.
@@ -68,10 +74,22 @@ public:
 	virtual void depthMask(bool state);
 	virtual void texture(bool state);
 	virtual void begin(duDebugDrawPrimitives prim, float size = 1.0f);
+#if RECAST_DEMO
+	virtual void vertex(const duReal* pos, unsigned int color);
+	virtual void vertex(const duReal x, const duReal y, const duReal z, unsigned int color);
+	virtual void vertex(const duReal* pos, unsigned int color, const duReal* uv);
+	virtual void vertex(const duReal x, const duReal y, const duReal z, unsigned int color, const duReal u, const duReal v);
+#else
 	virtual void vertex(const float* pos, unsigned int color);
 	virtual void vertex(const float x, const float y, const float z, unsigned int color);
 	virtual void vertex(const float* pos, unsigned int color, const float* uv);
 	virtual void vertex(const float x, const float y, const float z, unsigned int color, const float u, const float v);
+#endif
+
+#if RECAST_DEMO
+	virtual void text(const duReal x, const duReal y, const duReal z, const char* text) override;
+#endif
+
 	virtual void end();
 };
 

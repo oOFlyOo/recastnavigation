@@ -25,12 +25,21 @@
 #include "InputGeom.h"
 #include "Sample.h"
 #include "Sample_SoloMesh.h"
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#include "DebugUtils/RecastDebugDraw.h"
+#include "DebugUtils/RecastDump.h"
+#include "Detour/DetourNavMesh.h"
+#include "Detour/DetourNavMeshBuilder.h"
+#include "DebugUtils/DetourDebugDraw.h"
+#else
 #include "Recast.h"
 #include "RecastDebugDraw.h"
 #include "RecastDump.h"
 #include "DetourNavMesh.h"
 #include "DetourNavMeshBuilder.h"
 #include "DetourDebugDraw.h"
+#endif
 #include "NavMeshTesterTool.h"
 #include "NavMeshPruneTool.h"
 #include "OffMeshConnectionTool.h"
@@ -250,8 +259,13 @@ void Sample_SoloMesh::handleRender()
 	glDepthMask(GL_FALSE);
 
 	// Draw bounds
+#if RECAST_DEMO
+	const dtReal* bmin = m_geom->getNavMeshBoundsMin();
+	const dtReal* bmax = m_geom->getNavMeshBoundsMax();
+#else
 	const float* bmin = m_geom->getNavMeshBoundsMin();
 	const float* bmax = m_geom->getNavMeshBoundsMax();
+#endif
 	duDebugDrawBoxWire(&m_dd, bmin[0],bmin[1],bmin[2], bmax[0],bmax[1],bmax[2], duRGBA(255,255,255,128), 1.0f);
 	m_dd.begin(DU_DRAW_POINTS, 5.0f);
 	m_dd.vertex(bmin[0],bmin[1],bmin[2],duRGBA(255,255,255,128));
@@ -376,10 +390,16 @@ bool Sample_SoloMesh::handleBuild()
 	}
 	
 	cleanup();
-	
+
+#if RECAST_DEMO
+	const dtReal* bmin = m_geom->getNavMeshBoundsMin();
+	const dtReal* bmax = m_geom->getNavMeshBoundsMax();
+	const dtReal* verts = m_geom->getMesh()->getVerts();
+#else
 	const float* bmin = m_geom->getNavMeshBoundsMin();
 	const float* bmax = m_geom->getNavMeshBoundsMax();
 	const float* verts = m_geom->getMesh()->getVerts();
+#endif
 	const int nverts = m_geom->getMesh()->getVertCount();
 	const int* tris = m_geom->getMesh()->getTris();
 	const int ntris = m_geom->getMesh()->getTriCount();
@@ -453,11 +473,16 @@ bool Sample_SoloMesh::handleBuild()
 	// the are type for each of the meshes and rasterize them.
 	memset(m_triareas, 0, ntris*sizeof(unsigned char));
 	rcMarkWalkableTriangles(m_ctx, m_cfg.walkableSlopeAngle, verts, nverts, tris, ntris, m_triareas);
+
+#if RECAST_DEMO
+	rcRasterizeTriangles(m_ctx, verts, nverts, tris, m_triareas, ntris, *m_solid, m_cfg.walkableClimb);
+#else
 	if (!rcRasterizeTriangles(m_ctx, verts, nverts, tris, m_triareas, ntris, *m_solid, m_cfg.walkableClimb))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not rasterize triangles.");
 		return false;
 	}
+#endif
 
 	if (!m_keepInterResults)
 	{
@@ -475,7 +500,11 @@ bool Sample_SoloMesh::handleBuild()
 	if (m_filterLowHangingObstacles)
 		rcFilterLowHangingWalkableObstacles(m_ctx, m_cfg.walkableClimb, *m_solid);
 	if (m_filterLedgeSpans)
+#if RECAST_DEMO
+		rcFilterLedgeSpans(m_ctx, m_cfg.walkableHeight, m_cfg.walkableClimb, RC_SLOPE_FILTER_RECAST, 0, m_cfg.ch,  *m_solid);
+#else
 		rcFilterLedgeSpans(m_ctx, m_cfg.walkableHeight, m_cfg.walkableClimb, *m_solid);
+#endif
 	if (m_filterWalkableLowHeightSpans)
 		rcFilterWalkableLowHeightSpans(m_ctx, m_cfg.walkableHeight, *m_solid);
 
@@ -564,7 +593,11 @@ bool Sample_SoloMesh::handleBuild()
 	{
 		// Partition the walkable surface into simple regions without holes.
 		// Monotone partitioning does not need distancefield.
+#if RECAST_DEMO
+		if (!rcBuildRegionsMonotone(m_ctx, *m_chf, rcBorderSize(), m_cfg.minRegionArea, m_cfg.mergeRegionArea))
+#else
 		if (!rcBuildRegionsMonotone(m_ctx, *m_chf, 0, m_cfg.minRegionArea, m_cfg.mergeRegionArea))
+#endif
 		{
 			m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build monotone regions.");
 			return false;
@@ -572,12 +605,14 @@ bool Sample_SoloMesh::handleBuild()
 	}
 	else // SAMPLE_PARTITION_LAYERS
 	{
+#if !RECAST_DEMO
 		// Partition the walkable surface into simple regions without holes.
 		if (!rcBuildLayerRegions(m_ctx, *m_chf, 0, m_cfg.minRegionArea))
 		{
 			m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build layer regions.");
 			return false;
 		}
+#endif
 	}
 	
 	//
@@ -690,6 +725,10 @@ bool Sample_SoloMesh::handleBuild()
 		params.detailVertsCount = m_dmesh->nverts;
 		params.detailTris = m_dmesh->tris;
 		params.detailTriCount = m_dmesh->ntris;
+#if RECAST_DEMO
+		params.offMeshCons = nullptr;
+		params.offMeshConCount = 0;
+#else
 		params.offMeshConVerts = m_geom->getOffMeshConnectionVerts();
 		params.offMeshConRad = m_geom->getOffMeshConnectionRads();
 		params.offMeshConDir = m_geom->getOffMeshConnectionDirs();
@@ -697,6 +736,7 @@ bool Sample_SoloMesh::handleBuild()
 		params.offMeshConFlags = m_geom->getOffMeshConnectionFlags();
 		params.offMeshConUserID = m_geom->getOffMeshConnectionId();
 		params.offMeshConCount = m_geom->getOffMeshConnectionCount();
+#endif
 		params.walkableHeight = m_agentHeight;
 		params.walkableRadius = m_agentRadius;
 		params.walkableClimb = m_agentMaxClimb;
@@ -715,7 +755,11 @@ bool Sample_SoloMesh::handleBuild()
 		m_navMesh = dtAllocNavMesh();
 		if (!m_navMesh)
 		{
+#if RECAST_DEMO
+			dtFree(navData, DT_ALLOC_TEMP);
+#else
 			dtFree(navData);
+#endif
 			m_ctx->log(RC_LOG_ERROR, "Could not create Detour navmesh");
 			return false;
 		}
@@ -725,7 +769,11 @@ bool Sample_SoloMesh::handleBuild()
 		status = m_navMesh->init(navData, navDataSize, DT_TILE_FREE_DATA);
 		if (dtStatusFailed(status))
 		{
+#if RECAST_DEMO
+			dtFree(navData, DT_ALLOC_TEMP);
+#else
 			dtFree(navData);
+#endif
 			m_ctx->log(RC_LOG_ERROR, "Could not init Detour navmesh");
 			return false;
 		}

@@ -47,6 +47,11 @@ enum dtAllocHint
 	DT_ALLOC_PERM_TILE_DYNLINK_CLUSTER,
 	DT_ALLOC_PERM_TILES,
 	DT_ALLOC_PERM_TILE_LINK_BUILDER,
+
+	// 1.6 升级
+#if !RECAST_UNREAL_ENGINE
+	DT_ALLOC_PERM,		///< Memory persist after a function call.
+#endif
 };
 //@UE END Adding support for memory tracking.
 

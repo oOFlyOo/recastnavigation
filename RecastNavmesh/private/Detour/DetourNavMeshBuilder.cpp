@@ -521,7 +521,13 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 	//@UE END
 
 	//@UE BEGIN Memory optimization
-	auto setHeaderShort = [](const int value, unsigned short& headerVal, const TCHAR* text, bool& bAllValuesSet)
+#if RECAST_UNREAL_ENGINE
+	auto setHeaderShort = [](const int value, unsigned short& headerVal, const TCHAR* text, bool& 
+bAllValuesSet)
+#else
+	auto setHeaderShort = [](const int value, unsigned short& headerVal, const char* text, bool& 
+bAllValuesSet)
+#endif
 	{
 		dtAssert(value >= 0);
 

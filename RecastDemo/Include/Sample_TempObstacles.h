@@ -20,8 +20,13 @@
 #define RECASTSAMPLETEMPOBSTACLE_H
 
 #include "Sample.h"
+#if RECAST_DEMO
+#include "Detour/DetourNavMesh.h"
+#include "Recast/Recast.h"
+#else
 #include "DetourNavMesh.h"
 #include "Recast.h"
+#endif
 #include "ChunkyTriMesh.h"
 
 
@@ -74,13 +79,22 @@ public:
 	virtual bool handleBuild();
 	virtual void handleUpdate(const float dt);
 
+#if RECAST_DEMO
+	void getTilePos(const dtReal* pos, int& tx, int& ty);
+#else
 	void getTilePos(const float* pos, int& tx, int& ty);
+#endif
 	
 	void renderCachedTile(const int tx, const int ty, const int type);
 	void renderCachedTileOverlay(const int tx, const int ty, double* proj, double* model, int* view);
 
+#if RECAST_DEMO
+	void addTempObstacle(const dtReal* pos);
+	void removeTempObstacle(const dtReal* sp, const dtReal* sq);
+#else
 	void addTempObstacle(const float* pos);
 	void removeTempObstacle(const float* sp, const float* sq);
+#endif
 	void clearAllTempObstacles();
 
 	void saveAll(const char* path);

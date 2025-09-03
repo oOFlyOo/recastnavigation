@@ -18,8 +18,13 @@
 
 #ifndef RECASTSAMPLE_H
 #define RECASTSAMPLE_H
+#include "Detour/DetourLargeWorldCoordinates.h"
 
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#else
 #include "Recast.h"
+#endif
 #include "SampleInterfaces.h"
 
 
@@ -79,7 +84,11 @@ struct SampleTool
 	virtual void init(class Sample* sample) = 0;
 	virtual void reset() = 0;
 	virtual void handleMenu() = 0;
+#if RECAST_DEMO
+	virtual void handleClick(const rcReal* s, const rcReal* p, bool shift) = 0;
+#else
 	virtual void handleClick(const float* s, const float* p, bool shift) = 0;
+#endif
 	virtual void handleRender() = 0;
 	virtual void handleRenderOverlay(double* proj, double* model, int* view) = 0;
 	virtual void handleToggle() = 0;
@@ -150,7 +159,11 @@ public:
 	virtual void handleSettings();
 	virtual void handleTools();
 	virtual void handleDebugMode();
+#if RECAST_DEMO
+	virtual void handleClick(const dtReal* s, const dtReal* p, bool shift);
+#else
 	virtual void handleClick(const float* s, const float* p, bool shift);
+#endif
 	virtual void handleToggle();
 	virtual void handleStep();
 	virtual void handleRender();

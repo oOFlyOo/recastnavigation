@@ -18,6 +18,7 @@
 
 #ifndef CHUNKYTRIMESH_H
 #define CHUNKYTRIMESH_H
+#include "Detour/DetourLargeWorldCoordinates.h"
 
 struct rcChunkyTriMeshNode
 {
@@ -46,8 +47,13 @@ private:
 
 /// Creates partitioned triangle mesh (AABB tree),
 /// where each node contains at max trisPerChunk triangles.
+#if RECAST_DEMO
+bool rcCreateChunkyTriMesh(const dtReal* verts, const int* tris, int ntris,
+						   int trisPerChunk, rcChunkyTriMesh* cm);
+#else
 bool rcCreateChunkyTriMesh(const float* verts, const int* tris, int ntris,
 						   int trisPerChunk, rcChunkyTriMesh* cm);
+#endif
 
 /// Returns the chunk indices which overlap the input rectable.
 int rcGetChunksOverlappingRect(const rcChunkyTriMesh* cm, float bmin[2], float bmax[2], int* ids, const int maxIds);

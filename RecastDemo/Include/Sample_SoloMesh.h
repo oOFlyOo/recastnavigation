@@ -20,8 +20,13 @@
 #define RECASTSAMPLESOLOMESH_H
 
 #include "Sample.h"
+#if RECAST_DEMO
+#include "Detour/DetourNavMesh.h"
+#include "Recast/Recast.h"
+#else
 #include "DetourNavMesh.h"
 #include "Recast.h"
+#endif
 
 class Sample_SoloMesh : public Sample
 {

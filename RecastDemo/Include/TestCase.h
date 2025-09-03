@@ -20,7 +20,11 @@
 #define TESTCASE_H
 
 #include <string>
+#if RECAST_DEMO
+#include "Detour/DetourNavMesh.h"
+#else
 #include "DetourNavMesh.h"
+#endif
 
 class TestCase
 {
@@ -60,16 +64,27 @@ class TestCase
 		}
 		
 		TestType type;
+#if RECAST_DEMO
+		dtReal spos[3];
+		dtReal epos[3];
+		dtReal nspos[3];
+		dtReal nepos[3];
+#else
 		float spos[3];
 		float epos[3];
 		float nspos[3];
 		float nepos[3];
+#endif
 		float radius;
 		unsigned short includeFlags;
 		unsigned short excludeFlags;
 		bool expand;
-		
+
+#if RECAST_DEMO
+		dtReal* straight;
+#else
 		float* straight;
+#endif
 		int nstraight;
 		dtPolyRef* polys;
 		int npolys;

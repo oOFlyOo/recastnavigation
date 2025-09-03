@@ -11,7 +11,6 @@
 template <int NumInlineElements>
 class TFakeInlineAllocator
 {
-	
 };
 
 #define TArray TSimpleTArray
@@ -27,25 +26,55 @@ class TSimpleTArray
 	int ArrayCapacity = 0;
 
 public:
-	TSimpleTArray();
+	TSimpleTArray()
+	{
+	}
 
-	~TSimpleTArray();
+	~TSimpleTArray()
+	{
+	}
 
-	int Num() const;
-	bool IsEmpty() const;
+	int Num() const
+	{
+		return Data.size();
+	}
 
-	void Reserve(int NewCapacity);
+	bool IsEmpty() const
+	{
+		return Data.empty();
+	}
 
-	ElementType& Emplace_GetRef();
+	void Reserve(int NewCapacity)
+	{
+		Data.reserve(NewCapacity);
+	}
 
-	void Add(const ElementType& Item);
+	ElementType& Emplace_GetRef()
+	{
+		Data.emplace_back();
+
+		return Data.back();
+	}
+
+	void Add(const ElementType& Item)
+	{
+		Data.push_back(Item);
+	}
 
 	auto begin() noexcept { return Data.begin(); }
-    auto end() noexcept { return Data.end(); }
-    auto begin() const noexcept { return Data.begin(); }
-    auto end() const noexcept { return Data.end(); }
+	auto end() noexcept { return Data.end(); }
+	auto begin() const noexcept { return Data.begin(); }
+	auto end() const noexcept { return Data.end(); }
 
-	ElementType& operator[](int Index);
-	const ElementType& operator[](int Index) const;
+	ElementType& operator[](int Index)
+	{
+		return Data[Index];
+	}
+
+	const ElementType& operator[](int Index) const
+	{
+		return Data[Index];
+	}
 };
+
 #endif

@@ -27,10 +27,20 @@
 #include "NavMeshPruneTool.h"
 #include "InputGeom.h"
 #include "Sample.h"
+
+#if RECAST_DEMO
+#include "Detour/DetourNavMesh.h"
+#include "Detour/DetourCommon.h"
+#include "Detour/DetourAssert.h"
+#include "DebugUtils/DetourDebugDraw.h"
+
+#include "Detour/DetourNavMeshQuery.h"
+#else
 #include "DetourNavMesh.h"
 #include "DetourCommon.h"
 #include "DetourAssert.h"
 #include "DetourDebugDraw.h"
+#endif
 
 #ifdef WIN32
 #	define snprintf _snprintf
@@ -40,7 +50,11 @@ class NavmeshFlags
 {
 	struct TileFlags
 	{
+#if RECAST_DEMO
+		inline void purge() { dtFree(flags, DT_ALLOC_TEMP); }
+#else
 		inline void purge() { dtFree(flags); }
+#endif
 		unsigned char* flags;
 		int nflags;
 		dtPolyRef base;
@@ -60,7 +74,11 @@ public:
 	{
 		for (int i = 0; i < m_ntiles; ++i)
 			m_tiles[i].purge();
+#if RECAST_DEMO
+		dtFree(m_tiles, DT_ALLOC_TEMP);
+#else
 		dtFree(m_tiles);
+#endif
 	}
 	
 	bool init(const dtNavMesh* nav)
@@ -229,7 +247,7 @@ void NavMeshPruneTool::handleMenu()
 	}
 }
 
-void NavMeshPruneTool::handleClick(const float* s, const float* p, bool shift)
+void NavMeshPruneTool::handleClick(const rcReal* s, const rcReal* p, bool shift)
 {
 	rcIgnoreUnused(s);
 	rcIgnoreUnused(shift);
@@ -250,8 +268,12 @@ void NavMeshPruneTool::handleClick(const float* s, const float* p, bool shift)
 		m_flags = new NavmeshFlags;
 		m_flags->init(nav);
 	}
-	
+
+#if RECAST_DEMO
+	const dtReal halfExtents[3] = { 2, 4, 2 };
+#else
 	const float halfExtents[3] = { 2, 4, 2 };
+#endif
 	dtQueryFilter filter;
 	dtPolyRef ref = 0;
 	query->findNearestPoly(p, halfExtents, &filter, &ref, 0);

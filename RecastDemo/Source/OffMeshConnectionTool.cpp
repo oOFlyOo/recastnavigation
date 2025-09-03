@@ -31,9 +31,15 @@
 #include "OffMeshConnectionTool.h"
 #include "InputGeom.h"
 #include "Sample.h"
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#include "DebugUtils/RecastDebugDraw.h"
+#include "DebugUtils/DetourDebugDraw.h"
+#else
 #include "Recast.h"
 #include "RecastDebugDraw.h"
 #include "DetourDebugDraw.h"
+#endif
 
 #ifdef WIN32
 #	define snprintf _snprintf
@@ -78,7 +84,7 @@ void OffMeshConnectionTool::handleMenu()
 		m_bidir = true;
 }
 
-void OffMeshConnectionTool::handleClick(const float* /*s*/, const float* p, bool shift)
+void OffMeshConnectionTool::handleClick(const rcReal* /*s*/, const rcReal* p, bool shift)
 {
 	if (!m_sample) return;
 	InputGeom* geom = m_sample->getInputGeom();
@@ -90,10 +96,18 @@ void OffMeshConnectionTool::handleClick(const float* /*s*/, const float* p, bool
 		// Find nearest link end-point
 		float nearestDist = FLT_MAX;
 		int nearestIndex = -1;
+#if RECAST_DEMO
+		const dtReal* verts = geom->getOffMeshConnectionVerts();
+#else
 		const float* verts = geom->getOffMeshConnectionVerts();
+#endif
 		for (int i = 0; i < geom->getOffMeshConnectionCount()*2; ++i)
 		{
+#if RECAST_DEMO
+			const dtReal* v = &verts[i*3];
+#else
 			const float* v = &verts[i*3];
+#endif
 			float d = rcVdistSqr(p, v);
 			if (d < nearestDist)
 			{

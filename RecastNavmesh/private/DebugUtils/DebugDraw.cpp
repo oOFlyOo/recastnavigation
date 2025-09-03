@@ -28,12 +28,27 @@ duDebugDraw::~duDebugDraw()
 {
 	// Empty
 }
-	
+
+#if !RECAST_UNREAL_ENGINE
+unsigned int duDebugDraw::areaToCol(unsigned int area)
+{
+	if (area == 0)
+	{
+		// Treat zero area type as default.
+		return duRGBA(0, 192, 255, 255);
+	}
+	else
+	{
+		return duIntToCol(area, 255);
+	}
+}
+#endif
 
 inline int bit(int a, int b)
 {
 	return (a & (1 << b)) >> b;
 }
+
 
 unsigned int duIntToCol(int i, int a)
 {

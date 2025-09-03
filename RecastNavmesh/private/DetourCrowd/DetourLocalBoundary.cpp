@@ -182,13 +182,13 @@ void dtLocalBoundary::update(const dtSharedBoundary* sharedData, const int share
 	}
 
 	const dtSharedBoundaryData& Data = sharedData->Data[sharedIdx];
-#if RECAST_UNREAL_EDITOR
+#if RECAST_UNREAL_ENGINE
 	m_npolys = FMath::Min(Data.Polys.Num(), MAX_LOCAL_POLYS);
 #else
 	m_npolys = std::min(Data.Polys.Num(), MAX_LOCAL_POLYS);
 #endif
 	int32 PolyIdx = 0;
-#if RECAST_UNREAL_EDITOR
+#if RECAST_UNREAL_ENGINE
 	for (auto It = Data.Polys.CreateConstIterator(); It; ++It)
 #else
 	auto PolyData = Data.Polys.GetData();

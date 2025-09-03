@@ -149,6 +149,12 @@ struct duDebugDraw
 	
 	/// End drawing primitives.
 	virtual void end() = 0;
+
+	// 1.6 升级
+#if !RECAST_UNREAL_ENGINE
+	/// Compute a color for given area.
+	virtual unsigned int areaToCol(unsigned int area);
+#endif
 };
 
 // Reorder to handle the 0xRRGGBBAA format

@@ -20,11 +20,19 @@
 #include <stdio.h>
 #include "Sample_Debug.h"
 #include "InputGeom.h"
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#include "Detour/DetourNavMesh.h"
+#include "DebugUtils/RecastDebugDraw.h"
+#include "DebugUtils/DetourDebugDraw.h"
+#include "DebugUtils/RecastDump.h"
+#else
 #include "Recast.h"
 #include "DetourNavMesh.h"
 #include "RecastDebugDraw.h"
 #include "DetourDebugDraw.h"
 #include "RecastDump.h"
+#endif
 #include "imgui.h"
 #include "SDL.h"
 #include "SDL_opengl.h"
@@ -326,7 +334,7 @@ void Sample_Debug::handleMeshChanged(InputGeom* geom)
 	m_geom = geom;
 }
 
-const float* Sample_Debug::getBoundsMin()
+const dtReal* Sample_Debug::getBoundsMin()
 {
 	if (m_cset)
 		return m_cset->bmin;
@@ -337,7 +345,7 @@ const float* Sample_Debug::getBoundsMin()
 	return 0;
 }
 
-const float* Sample_Debug::getBoundsMax()
+const dtReal* Sample_Debug::getBoundsMax()
 {
 	if (m_cset)
 		return m_cset->bmax;
@@ -348,7 +356,7 @@ const float* Sample_Debug::getBoundsMax()
 	return 0;
 }
 
-void Sample_Debug::handleClick(const float* s, const float* p, bool shift)
+void Sample_Debug::handleClick(const dtReal* s, const dtReal* p, bool shift)
 {
 	if (m_tool)
 		m_tool->handleClick(s, p, shift);

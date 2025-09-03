@@ -44,7 +44,6 @@
 
 typedef signed int	 		int32;
 typedef unsigned int		uint32;
-typedef wchar_t				TCHAR;
 typedef unsigned char 		uint8;
 
 

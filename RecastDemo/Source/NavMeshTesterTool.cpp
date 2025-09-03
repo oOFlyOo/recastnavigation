@@ -30,6 +30,18 @@
 #include "imgui.h"
 #include "NavMeshTesterTool.h"
 #include "Sample.h"
+
+#if RECAST_DEMO
+#include "Recast//Recast.h"
+#include "DebugUtils/RecastDebugDraw.h"
+#include "Detour/DetourNavMesh.h"
+#include "Detour/DetourNavMeshBuilder.h"
+#include "DebugUtils/DetourDebugDraw.h"
+#include "Detour/DetourCommon.h"
+#include "DetourCrowd/DetourPathCorridor.h"
+
+#include "Detour/DetourMath.h"
+#else
 #include "Recast.h"
 #include "RecastDebugDraw.h"
 #include "DetourNavMesh.h"
@@ -37,6 +49,7 @@
 #include "DetourDebugDraw.h"
 #include "DetourCommon.h"
 #include "DetourPathCorridor.h"
+#endif
 
 #ifdef WIN32
 #	define snprintf _snprintf
@@ -52,7 +65,11 @@ static float frand()
 	return (float)rand()/(float)RAND_MAX;
 }
 
+#if RECAST_DEMO
+inline bool inRange(const dtReal* v1, const dtReal* v2, const float r, const float h)
+#else
 inline bool inRange(const float* v1, const float* v2, const float r, const float h)
+#endif
 {
 	const float dx = v2[0] - v1[0];
 	const float dy = v2[1] - v1[1];
@@ -120,13 +137,33 @@ static int fixupShortcuts(dtPolyRef* path, int npath, dtNavMeshQuery* navQuery)
 	return npath;
 }
 
+#if RECAST_DEMO
+static bool getSteerTarget(dtNavMeshQuery* navQuery, const dtReal* startPos, const dtReal* endPos,
+						   const float minTargetDist,
+						   const dtPolyRef* path, const int pathSize,
+						   dtReal* steerPos, unsigned char& steerPosFlag, dtPolyRef& steerPosRef,
+						   dtReal* outPoints = 0, int* outPointCount = 0)
+#else
 static bool getSteerTarget(dtNavMeshQuery* navQuery, const float* startPos, const float* endPos,
 						   const float minTargetDist,
 						   const dtPolyRef* path, const int pathSize,
 						   float* steerPos, unsigned char& steerPosFlag, dtPolyRef& steerPosRef,
 						   float* outPoints = 0, int* outPointCount = 0)							 
+#endif
 {
+
 	// Find steer target.
+#if RECAST_DEMO
+	static const int MAX_STEER_POINTS = 3;
+	dtReal steerPath[MAX_STEER_POINTS*3];
+	unsigned char steerPathFlags[MAX_STEER_POINTS];
+	dtPolyRef steerPathPolys[MAX_STEER_POINTS];
+	int nsteerPath = 0;
+
+	dtQueryResult findStraightPathResult;
+	navQuery->findStraightPath(startPos, endPos, path, pathSize,
+							   findStraightPathResult);
+#else
 	static const int MAX_STEER_POINTS = 3;
 	float steerPath[MAX_STEER_POINTS*3];
 	unsigned char steerPathFlags[MAX_STEER_POINTS];
@@ -134,6 +171,7 @@ static bool getSteerTarget(dtNavMeshQuery* navQuery, const float* startPos, cons
 	int nsteerPath = 0;
 	navQuery->findStraightPath(startPos, endPos, path, pathSize,
 							   steerPath, steerPathFlags, steerPathPolys, &nsteerPath, MAX_STEER_POINTS);
+#endif
 	if (!nsteerPath)
 		return false;
 		
@@ -332,7 +370,11 @@ void NavMeshTesterTool::handleMenu()
 		m_nrandPoints = 0;
 		for (int i = 0; i < MAX_RAND_POINTS; i++)
 		{
+#if RECAST_DEMO
+			dtReal pt[3];
+#else
 			float pt[3];
+#endif
 			dtPolyRef ref;
 			dtStatus status = m_navQuery->findRandomPoint(&m_filter, frand, &ref, pt);
 			if (dtStatusSucceed(status))
@@ -350,7 +392,11 @@ void NavMeshTesterTool::handleMenu()
 			m_randPointsInCircle = true;
 			for (int i = 0; i < MAX_RAND_POINTS; i++)
 			{
+#if RECAST_DEMO
+				dtReal pt[3];
+#else
 				float pt[3];
+#endif
 				dtPolyRef ref;
 				dtStatus status = m_navQuery->findRandomPointAroundCircle(m_startRef, m_spos, m_randomRadius, &m_filter, frand, &ref, pt);
 				if (dtStatusSucceed(status))
@@ -419,7 +465,7 @@ void NavMeshTesterTool::handleMenu()
 	imguiSeparator();	
 }
 
-void NavMeshTesterTool::handleClick(const float* /*s*/, const float* p, bool shift)
+void NavMeshTesterTool::handleClick(const rcReal* /*s*/, const rcReal* p, bool shift)
 {
 	if (shift)
 	{
@@ -452,7 +498,14 @@ void NavMeshTesterTool::handleToggle()
 
 	if (m_pathIterNum == 0)
 	{
+#if RECAST_DEMO
+		const float CostLimit = FLT_MAX;
+		dtQueryResult Result;
+
+		m_navQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, CostLimit, &m_filter, Result, nullptr);
+#else
 		m_navQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, &m_filter, m_polys, &m_npolys, MAX_POLYS);
+#endif
 		m_nsmoothPath = 0;
 
 		m_pathIterPolyCount = m_npolys;
@@ -462,8 +515,13 @@ void NavMeshTesterTool::handleToggle()
 		if (m_pathIterPolyCount)
 		{
 			// Iterate over the path to find smooth path on the detail mesh surface.
+#if RECAST_DEMO
+			m_navQuery->closestPointOnPoly(m_startRef, m_spos, m_iterPos);
+			m_navQuery->closestPointOnPoly(m_pathIterPolys[m_pathIterPolyCount-1], m_epos, m_targetPos);
+#else
 			m_navQuery->closestPointOnPoly(m_startRef, m_spos, m_iterPos, 0);
 			m_navQuery->closestPointOnPoly(m_pathIterPolys[m_pathIterPolyCount-1], m_epos, m_targetPos, 0);
+#endif
 			
 			m_nsmoothPath = 0;
 			
@@ -486,7 +544,11 @@ void NavMeshTesterTool::handleToggle()
 	// when ran out of memory to store the path.
 
 	// Find location to steer towards.
+#if RECAST_DEMO
+	dtReal steerPos[3];
+#else
 	float steerPos[3];
+#endif
 	unsigned char steerPosFlag;
 	dtPolyRef steerPosRef;
 		
@@ -501,7 +563,11 @@ void NavMeshTesterTool::handleToggle()
 	bool offMeshConnection = (steerPosFlag & DT_STRAIGHTPATH_OFFMESH_CONNECTION) ? true : false;
 		
 	// Find movement delta.
+#if RECAST_DEMO
+	dtReal delta[3], len;
+#else
 	float delta[3], len;
+#endif
 	dtVsub(delta, steerPos, m_iterPos);
 	len = sqrtf(dtVdot(delta,delta));
 	// If the steer target is end of path or off-mesh link, do not move past the location.
@@ -509,11 +575,19 @@ void NavMeshTesterTool::handleToggle()
 		len = 1;
 	else
 		len = STEP_SIZE / len;
+#if RECAST_DEMO
+	dtReal moveTgt[3];
+#else
 	float moveTgt[3];
+#endif
 	dtVmad(moveTgt, m_iterPos, delta, len);
 		
 	// Move
+#if RECAST_DEMO
+	dtReal result[3];
+#else
 	float result[3];
+#endif
 	dtPolyRef visited[16];
 	int nvisited = 0;
 	m_navQuery->moveAlongSurface(m_pathIterPolys[0], m_iterPos, moveTgt, &m_filter,
@@ -522,7 +596,12 @@ void NavMeshTesterTool::handleToggle()
 								 MAX_POLYS, visited, nvisited);
 	m_pathIterPolyCount = fixupShortcuts(m_pathIterPolys, m_pathIterPolyCount, m_navQuery);
 
+#if RECAST_DEMO
+	dtReal h = 0;
+#else
 	float h = 0;
+#endif
+
 	m_navQuery->getPolyHeight(m_pathIterPolys[0], result, &h);
 	result[1] = h;
 	dtVcopy(m_iterPos, result);
@@ -542,7 +621,11 @@ void NavMeshTesterTool::handleToggle()
 	else if (offMeshConnection && inRange(m_iterPos, steerPos, SLOP, 1.0f))
 	{
 		// Reached off-mesh connection.
+#if RECAST_DEMO
+		dtReal startPos[3], endPos[3];
+#else
 		float startPos[3], endPos[3];
+#endif
 		
 		// Advance the path up to and over the off-mesh connection.
 		dtPolyRef prevRef = 0, polyRef = m_pathIterPolys[0];
@@ -558,7 +641,11 @@ void NavMeshTesterTool::handleToggle()
 		m_pathIterPolyCount -= npos;
 				
 		// Handle the connection.
+#if RECAST_DEMO
+		dtStatus status = m_navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, nullptr, startPos, endPos);
+#else
 		dtStatus status = m_navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, startPos, endPos);
+#endif
 		if (dtStatusSucceed(status))
 		{
 			if (m_nsmoothPath < MAX_SMOOTH)
@@ -574,7 +661,11 @@ void NavMeshTesterTool::handleToggle()
 			}
 			// Move position at the other side of the off-mesh link.
 			dtVcopy(m_iterPos, endPos);
+#if RECAST_DEMO
+			dtReal eh = 0.0f;
+#else
 			float eh = 0.0f;
+#endif
 			m_navQuery->getPolyHeight(m_pathIterPolys[0], m_iterPos, &eh);
 			m_iterPos[1] = eh;
 		}
@@ -604,14 +695,26 @@ void NavMeshTesterTool::handleUpdate(const float /*dt*/)
 			if (m_npolys)
 			{
 				// In case of partial path, make sure the end point is clamped to the last polygon.
+#if RECAST_DEMO
+				dtReal epos[3];
+#else
 				float epos[3];
+#endif
 				dtVcopy(epos, m_epos);
 				if (m_polys[m_npolys-1] != m_endRef)
+#if RECAST_DEMO
+				m_navQuery->closestPointOnPoly(m_polys[m_npolys-1], m_epos, epos);
+
+				dtQueryResult findStraightPathResult;
+				m_navQuery->findStraightPath(m_spos, epos, m_polys, m_npolys,
+											 findStraightPathResult);
+#else
 				m_navQuery->closestPointOnPoly(m_polys[m_npolys-1], m_epos, epos, 0);
 
 				m_navQuery->findStraightPath(m_spos, epos, m_polys, m_npolys,
 											 m_straightPath, m_straightPathFlags,
 											 m_straightPathPolys, &m_nstraightPath, MAX_POLYS, DT_STRAIGHTPATH_ALL_CROSSINGS);
+#endif
 			}
 			 
 			m_pathFindStatus = DT_FAILURE;
@@ -660,7 +763,14 @@ void NavMeshTesterTool::recalc()
 				   m_filter.getIncludeFlags(), m_filter.getExcludeFlags()); 
 #endif
 
-			m_navQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, &m_filter, m_polys, &m_npolys, MAX_POLYS);
+#if RECAST_DEMO
+		const float CostLimit = FLT_MAX;
+		dtQueryResult Result;
+
+		m_navQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, CostLimit, &m_filter, Result, nullptr);
+#else
+		m_navQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, &m_filter, m_polys, &m_npolys, MAX_POLYS);
+#endif
 
 			m_nsmoothPath = 0;
 
@@ -670,10 +780,16 @@ void NavMeshTesterTool::recalc()
 				dtPolyRef polys[MAX_POLYS];
 				memcpy(polys, m_polys, sizeof(dtPolyRef)*m_npolys); 
 				int npolys = m_npolys;
-				
+
+#if RECAST_DEMO
+				dtReal iterPos[3], targetPos[3];
+				m_navQuery->closestPointOnPoly(m_startRef, m_spos, iterPos);
+				m_navQuery->closestPointOnPoly(polys[npolys-1], m_epos, targetPos);
+#else
 				float iterPos[3], targetPos[3];
 				m_navQuery->closestPointOnPoly(m_startRef, m_spos, iterPos, 0);
 				m_navQuery->closestPointOnPoly(polys[npolys-1], m_epos, targetPos, 0);
+#endif
 				
 				static const float STEP_SIZE = 0.5f;
 				static const float SLOP = 0.01f;
@@ -688,7 +804,11 @@ void NavMeshTesterTool::recalc()
 				while (npolys && m_nsmoothPath < MAX_SMOOTH)
 				{
 					// Find location to steer towards.
+#if RECAST_DEMO
+					dtReal steerPos[3];
+#else
 					float steerPos[3];
+#endif
 					unsigned char steerPosFlag;
 					dtPolyRef steerPosRef;
 					
@@ -700,7 +820,11 @@ void NavMeshTesterTool::recalc()
 					bool offMeshConnection = (steerPosFlag & DT_STRAIGHTPATH_OFFMESH_CONNECTION) ? true : false;
 					
 					// Find movement delta.
+#if RECAST_DEMO
+					dtReal delta[3], len;
+#else
 					float delta[3], len;
+#endif
 					dtVsub(delta, steerPos, iterPos);
 					len = dtMathSqrtf(dtVdot(delta, delta));
 					// If the steer target is end of path or off-mesh link, do not move past the location.
@@ -708,11 +832,19 @@ void NavMeshTesterTool::recalc()
 						len = 1;
 					else
 						len = STEP_SIZE / len;
+#if RECAST_DEMO
+					dtReal moveTgt[3];
+#else
 					float moveTgt[3];
+#endif
 					dtVmad(moveTgt, iterPos, delta, len);
 					
 					// Move
+#if RECAST_DEMO
+					dtReal result[3];
+#else
 					float result[3];
+#endif
 					dtPolyRef visited[16];
 					int nvisited = 0;
 					m_navQuery->moveAlongSurface(polys[0], iterPos, moveTgt, &m_filter,
@@ -721,7 +853,11 @@ void NavMeshTesterTool::recalc()
 					npolys = dtMergeCorridorStartMoved(polys, npolys, MAX_POLYS, visited, nvisited);
 					npolys = fixupShortcuts(polys, npolys, m_navQuery);
 
+#if RECAST_DEMO
+					dtReal h = 0;
+#else
 					float h = 0;
+#endif
 					m_navQuery->getPolyHeight(polys[0], result, &h);
 					result[1] = h;
 					dtVcopy(iterPos, result);
@@ -741,7 +877,11 @@ void NavMeshTesterTool::recalc()
 					else if (offMeshConnection && inRange(iterPos, steerPos, SLOP, 1.0f))
 					{
 						// Reached off-mesh connection.
+#if RECAST_DEMO
+						dtReal startPos[3], endPos[3];
+#else
 						float startPos[3], endPos[3];
+#endif
 						
 						// Advance the path up to and over the off-mesh connection.
 						dtPolyRef prevRef = 0, polyRef = polys[0];
@@ -757,7 +897,11 @@ void NavMeshTesterTool::recalc()
 						npolys -= npos;
 						
 						// Handle the connection.
+#if RECAST_DEMO
+						dtStatus status = m_navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, nullptr, startPos, endPos);
+#else
 						dtStatus status = m_navMesh->getOffMeshConnectionPolyEndPoints(prevRef, polyRef, startPos, endPos);
+#endif
 						if (dtStatusSucceed(status))
 						{
 							if (m_nsmoothPath < MAX_SMOOTH)
@@ -773,7 +917,11 @@ void NavMeshTesterTool::recalc()
 							}
 							// Move position at the other side of the off-mesh link.
 							dtVcopy(iterPos, endPos);
+#if RECAST_DEMO
+							dtReal eh = 0.0f;
+#else
 							float eh = 0.0f;
+#endif
 							m_navQuery->getPolyHeight(polys[0], iterPos, &eh);
 							iterPos[1] = eh;
 						}
@@ -804,11 +952,30 @@ void NavMeshTesterTool::recalc()
 				   m_spos[0],m_spos[1],m_spos[2], m_epos[0],m_epos[1],m_epos[2],
 				   m_filter.getIncludeFlags(), m_filter.getExcludeFlags()); 
 #endif
+
+#if RECAST_DEMO
+			const float CostLimit = FLT_MAX;
+			dtQueryResult Result;
+
+			m_navQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, CostLimit, &m_filter, Result, nullptr);
+#else
 			m_navQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, &m_filter, m_polys, &m_npolys, MAX_POLYS);
+#endif
+
 			m_nstraightPath = 0;
 			if (m_npolys)
 			{
 				// In case of partial path, make sure the end point is clamped to the last polygon.
+#if RECAST_DEMO
+				dtReal epos[3];
+				dtVcopy(epos, m_epos);
+				if (m_polys[m_npolys-1] != m_endRef)
+					m_navQuery->closestPointOnPoly(m_polys[m_npolys-1], m_epos, epos);
+
+				dtQueryResult findStraightPathResult;
+				m_navQuery->findStraightPath(m_spos, epos, m_polys, m_npolys,
+											 findStraightPathResult);
+#else
 				float epos[3];
 				dtVcopy(epos, m_epos);
 				if (m_polys[m_npolys-1] != m_endRef)
@@ -817,6 +984,7 @@ void NavMeshTesterTool::recalc()
 				m_navQuery->findStraightPath(m_spos, epos, m_polys, m_npolys,
 											 m_straightPath, m_straightPathFlags,
 											 m_straightPathPolys, &m_nstraightPath, MAX_POLYS, m_straightPathOptions);
+#endif
 			}
 		}
 		else
@@ -836,8 +1004,13 @@ void NavMeshTesterTool::recalc()
 #endif
 			m_npolys = 0;
 			m_nstraightPath = 0;
-			
+
+#if RECAST_DEMO
+			const float CostLimit = FLT_MAX;
+			m_pathFindStatus = m_navQuery->initSlicedFindPath(m_startRef, m_endRef, m_spos, m_epos, CostLimit, false, &m_filter);
+#else
 			m_pathFindStatus = m_navQuery->initSlicedFindPath(m_startRef, m_endRef, m_spos, m_epos, &m_filter, DT_FINDPATH_ANY_ANGLE);
+#endif
 		}
 		else
 		{
@@ -855,7 +1028,12 @@ void NavMeshTesterTool::recalc()
 				   m_spos[0],m_spos[1],m_spos[2], m_epos[0],m_epos[1],m_epos[2],
 				   m_filter.getIncludeFlags(), m_filter.getExcludeFlags()); 
 #endif
+
+#if RECAST_DEMO
+			dtReal t = 0;
+#else
 			float t = 0;
+#endif
 			m_npolys = 0;
 			m_nstraightPath = 2;
 			m_straightPath[0] = m_spos[0];
@@ -877,7 +1055,11 @@ void NavMeshTesterTool::recalc()
 			// Adjust height.
 			if (m_npolys > 0)
 			{
+#if RECAST_DEMO
+				dtReal h = 0;
+#else
 				float h = 0;
+#endif
 				m_navQuery->getPolyHeight(m_polys[m_npolys-1], m_hitPos, &h);
 				m_hitPos[1] = h;
 			}
@@ -980,7 +1162,11 @@ static void getPolyCenter(dtNavMesh* navMesh, dtPolyRef ref, float* center)
 		
 	for (int i = 0; i < (int)poly->vertCount; ++i)
 	{
+#if RECAST_DEMO
+		const dtReal* v = &tile->verts[poly->verts[i]*3];
+#else
 		const float* v = &tile->verts[poly->verts[i]*3];
+#endif
 		center[0] += v[0];
 		center[1] += v[1];
 		center[2] += v[2];
@@ -1228,8 +1414,13 @@ void NavMeshTesterTool::handleRender()
 			dd.begin(DU_DRAW_LINES, 2.0f);
 			for (int i = 0, j = 3; i < 4; j=i++)
 			{
+#if RECAST_DEMO
+				const dtReal* p0 = &m_queryPoly[j*3];
+				const dtReal* p1 = &m_queryPoly[i*3];
+#else
 				const float* p0 = &m_queryPoly[j*3];
 				const float* p1 = &m_queryPoly[i*3];
+#endif
 				dd.vertex(p0, col);
 				dd.vertex(p1, col);
 			}
@@ -1254,7 +1445,11 @@ void NavMeshTesterTool::handleRender()
 			}
 
 			static const int MAX_SEGS = DT_VERTS_PER_POLYGON*4;
+#if RECAST_DEMO
+			dtReal segs[MAX_SEGS*6];
+#else
 			float segs[MAX_SEGS*6];
+#endif
 			dtPolyRef refs[MAX_SEGS];
 			memset(refs, 0, sizeof(dtPolyRef)*MAX_SEGS); 
 			int nsegs = 0;
@@ -1262,15 +1457,27 @@ void NavMeshTesterTool::handleRender()
 			dd.begin(DU_DRAW_LINES, 2.0f);
 			for (int j = 0; j < nsegs; ++j)
 			{
+#if RECAST_DEMO
+				const dtReal* s = &segs[j*6];
+#else
 				const float* s = &segs[j*6];
+#endif
 				
 				// Skip too distant segments.
+#if RECAST_DEMO
+				dtReal tseg;
+#else
 				float tseg;
+#endif
 				float distSqr = dtDistancePtSegSqr2D(m_spos, s, s+3, tseg);
 				if (distSqr > dtSqr(m_neighbourhoodRadius))
 					continue;
-				
+
+#if RECAST_DEMO
+				dtReal delta[3], norm[3], p0[3], p1[3];
+#else
 				float delta[3], norm[3], p0[3], p1[3];
+#endif
 				dtVsub(delta, s+3,s);
 				dtVmad(p0, s, delta, 0.5f);
 				norm[0] = delta[2];
@@ -1317,7 +1524,11 @@ void NavMeshTesterTool::handleRender()
 		dd.begin(DU_DRAW_POINTS, 6.0f);
 		for (int i = 0; i < m_nrandPoints; i++)
 		{
+#if RECAST_DEMO
+			const dtReal* p = &m_randPoints[i*3];
+#else
 			const float* p = &m_randPoints[i*3];
+#endif
 			dd.vertex(p[0],p[1]+0.1f,p[2], duRGBA(220,32,16,192));
 		} 
 		dd.end();
@@ -1350,7 +1561,7 @@ void NavMeshTesterTool::handleRenderOverlay(double* proj, double* model, int* vi
 	imguiDrawText(280, h-40, IMGUI_ALIGN_LEFT, "LMB+SHIFT: Set start location  LMB: Set end location", imguiRGBA(255,255,255,192));	
 }
 
-void NavMeshTesterTool::drawAgent(const float* pos, float r, float h, float c, const unsigned int col)
+void NavMeshTesterTool::drawAgent(const dtReal* pos, float r, float h, float c, const unsigned int col)
 {
 	duDebugDraw& dd = m_sample->getDebugDraw();
 	

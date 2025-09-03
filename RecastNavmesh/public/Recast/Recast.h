@@ -35,6 +35,12 @@
 /// The value of PI used by Recast.
 static const rcReal RC_PI = 3.14159265358979323846;
 
+// 1.6 升级
+#if !RECAST_UNREAL_ENGINE
+/// Used to ignore unused function parameters and silence any compiler warnings.
+template<class T> void rcIgnoreUnused(const T&) { }
+#endif
+
 inline float rcSin(float x)
 {
 	return sinf(x);
@@ -1320,6 +1326,12 @@ NAVMESH_API bool rcBuildDistanceField(rcContext* ctx, rcCompactHeightfield& chf)
 ///  @returns True if the operation completed successfully.
 NAVMESH_API bool rcBuildRegions(rcContext* ctx, rcCompactHeightfield& chf,
 					const int borderSize, const int minRegionArea, const int mergeRegionArea);
+
+// 1.6 兼容
+#if !RECAST_UNREAL_ENGINE
+NAVMESH_API bool rcBuildRegions(rcContext* ctx, rcCompactHeightfield& chf,
+					const rcBorderSize borderSize, const int minRegionArea, const int mergeRegionArea);
+#endif
 
 /// Builds region data for the heightfield using simple monotone partitioning.
 ///  @ingroup recast 

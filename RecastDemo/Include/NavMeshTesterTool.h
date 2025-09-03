@@ -20,8 +20,13 @@
 #define NAVMESHTESTERTOOL_H
 
 #include "Sample.h"
+#if RECAST_DEMO
+#include "Detour/DetourNavMesh.h"
+#include "Detour/DetourNavMeshQuery.h"
+#else
 #include "DetourNavMesh.h"
 #include "DetourNavMeshQuery.h"
+#endif
 
 class NavMeshTesterTool : public SampleTool
 {
@@ -58,38 +63,76 @@ class NavMeshTesterTool : public SampleTool
 	dtPolyRef m_polys[MAX_POLYS];
 	dtPolyRef m_parent[MAX_POLYS];
 	int m_npolys;
+#if RECAST_DEMO
+	dtReal m_straightPath[MAX_POLYS*3];
+#else
 	float m_straightPath[MAX_POLYS*3];
+#endif
 	unsigned char m_straightPathFlags[MAX_POLYS];
 	dtPolyRef m_straightPathPolys[MAX_POLYS];
 	int m_nstraightPath;
+#if RECAST_DEMO
+	dtReal m_polyPickExt[3];
+	dtReal m_smoothPath[MAX_SMOOTH*3];
+#else
 	float m_polyPickExt[3];
 	float m_smoothPath[MAX_SMOOTH*3];
+#endif
 	int m_nsmoothPath;
+#if RECAST_DEMO
+	dtReal m_queryPoly[4*3];
+#else
 	float m_queryPoly[4*3];
+#endif
 
 	static const int MAX_RAND_POINTS = 64;
+#if RECAST_DEMO
+	dtReal m_randPoints[MAX_RAND_POINTS*3];
+#else
 	float m_randPoints[MAX_RAND_POINTS*3];
+#endif
 	int m_nrandPoints;
 	bool m_randPointsInCircle;
-	
+
+#if RECAST_DEMO
+	dtReal m_spos[3];
+	dtReal m_epos[3];
+	dtReal m_hitPos[3];
+	dtReal m_hitNormal[3];
+#else
 	float m_spos[3];
 	float m_epos[3];
 	float m_hitPos[3];
 	float m_hitNormal[3];
+#endif
 	bool m_hitResult;
+#if RECAST_DEMO
+	dtReal m_distanceToWall;
+	float m_neighbourhoodRadius;
+	float m_randomRadius;
+#else
 	float m_distanceToWall;
 	float m_neighbourhoodRadius;
 	float m_randomRadius;
+#endif
 	bool m_sposSet;
 	bool m_eposSet;
 
 	int m_pathIterNum;
 	dtPolyRef m_pathIterPolys[MAX_POLYS]; 
 	int m_pathIterPolyCount;
+#if RECAST_DEMO
+	dtReal m_prevIterPos[3], m_iterPos[3], m_steerPos[3], m_targetPos[3];
+#else
 	float m_prevIterPos[3], m_iterPos[3], m_steerPos[3], m_targetPos[3];
+#endif
 	
 	static const int MAX_STEER_POINTS = 10;
+#if RECAST_DEMO
+	dtReal m_steerPoints[MAX_STEER_POINTS*3];
+#else
 	float m_steerPoints[MAX_STEER_POINTS*3];
+#endif
 	int m_steerPointCount;
 	
 public:
@@ -99,7 +142,7 @@ public:
 	virtual void init(Sample* sample);
 	virtual void reset();
 	virtual void handleMenu();
-	virtual void handleClick(const float* s, const float* p, bool shift);
+	virtual void handleClick(const rcReal* s, const rcReal* p, bool shift);
 	virtual void handleToggle();
 	virtual void handleStep();
 	virtual void handleUpdate(const float dt);
@@ -107,7 +150,11 @@ public:
 	virtual void handleRenderOverlay(double* proj, double* model, int* view);
 
 	void recalc();
+#if RECAST_DEMO
+	void drawAgent(const dtReal* pos, float r, float h, float c, const unsigned int col);
+#else
 	void drawAgent(const float* pos, float r, float h, float c, const unsigned int col);
+#endif
 };
 
 #endif // NAVMESHTESTERTOOL_H

@@ -20,13 +20,18 @@
 #define OFFMESHCONNECTIONTOOL_H
 
 #include "Sample.h"
+#include "Detour/DetourLargeWorldCoordinates.h"
 
 // Tool to create off-mesh connection for InputGeom
 
 class OffMeshConnectionTool : public SampleTool
 {
 	Sample* m_sample;
+#if RECAST_DEMO
+	dtReal m_hitPos[3];
+#else
 	float m_hitPos[3];
+#endif
 	bool m_hitPosSet;
 	bool m_bidir;
 	unsigned char m_oldFlags;
@@ -39,7 +44,7 @@ public:
 	virtual void init(Sample* sample);
 	virtual void reset();
 	virtual void handleMenu();
-	virtual void handleClick(const float* s, const float* p, bool shift);
+	virtual void handleClick(const rcReal* s, const rcReal* p, bool shift);
 	virtual void handleToggle();
 	virtual void handleStep();
 	virtual void handleUpdate(const float dt);

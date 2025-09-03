@@ -32,6 +32,24 @@
 #include "InputGeom.h"
 #include "Sample.h"
 #include "Sample_TempObstacles.h"
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#include "DebugUtils/RecastDebugDraw.h"
+#include "Detour/DetourAssert.h"
+#include "Detour/DetourNavMesh.h"
+#include "Detour/DetourNavMeshBuilder.h"
+#include "DebugUtils/DetourDebugDraw.h"
+#include "Detour/DetourCommon.h"
+#include "DetourTileCache/DetourTileCache.h"
+#include "NavMeshTesterTool.h"
+#include "OffMeshConnectionTool.h"
+#include "ConvexVolumeTool.h"
+#include "CrowdTool.h"
+#include "Recast/RecastAlloc.h"
+#include "Recast/RecastAssert.h"
+
+#include "DetourTileCache/DetourTileCacheBuilder.h"
+#else
 #include "Recast.h"
 #include "RecastDebugDraw.h"
 #include "DetourAssert.h"
@@ -46,6 +64,7 @@
 #include "CrowdTool.h"
 #include "RecastAlloc.h"
 #include "RecastAssert.h"
+#endif
 #include "fastlz.h"
 
 #ifdef WIN32
@@ -57,13 +76,23 @@
 static const int EXPECTED_LAYERS_PER_TILE = 4;
 
 
+#if RECAST_DEMO
+static bool isectSegAABB(const dtReal* sp, const dtReal* sq,
+						 const dtReal* amin, const dtReal* amax,
+						 dtReal& tmin, dtReal& tmax)
+#else
 static bool isectSegAABB(const float* sp, const float* sq,
 						 const float* amin, const float* amax,
 						 float& tmin, float& tmax)
+#endif
 {
 	static const float EPS = 1e-6f;
-	
+
+#if RECAST_DEMO
+	dtReal d[3];
+#else
 	float d[3];
+#endif
 	rcVsub(d, sq, sp);
 	tmin = 0;  // set to -FLT_MAX to get first hit on line
 	tmax = FLT_MAX;		// set to max distance ray can travel (for segment)
@@ -98,7 +127,11 @@ static bool isectSegAABB(const float* sp, const float* sq,
 
 static int calcLayerBufferSize(const int gridWidth, const int gridHeight)
 {
+#if RECAST_DEMO
+	const int headerSize = dtAlign(sizeof(dtTileCacheLayerHeader));
+#else
 	const int headerSize = dtAlign4(sizeof(dtTileCacheLayerHeader));
+#endif
 	const int gridSize = gridWidth * gridHeight;
 	return headerSize + gridSize*4;
 }
@@ -151,7 +184,11 @@ struct LinearAllocator : public dtTileCacheAlloc
 
 	void resize(const size_t cap)
 	{
+#if RECAST_DEMO
+		if (buffer) dtFree(buffer, DT_ALLOC_TEMP);
+#else
 		if (buffer) dtFree(buffer);
+#endif
 		buffer = (unsigned char*)dtAlloc(cap, DT_ALLOC_PERM);
 		capacity = cap;
 	}
@@ -182,7 +219,11 @@ struct LinearAllocator : public dtTileCacheAlloc
 LinearAllocator::~LinearAllocator()
 {
 	// Defined out of line to fix the weak v-tables warning
+#if RECAST_DEMO
+	dtFree(buffer, DT_ALLOC_TEMP);
+#else
 	dtFree(buffer);
+#endif
 }
 
 struct MeshProcess : public dtTileCacheMeshProcess
@@ -228,21 +269,36 @@ struct MeshProcess : public dtTileCacheMeshProcess
 		// Pass in off-mesh connections.
 		if (m_geom)
 		{
+#if RECAST_DEMO
+			params->offMeshCons = nullptr;
+			params->offMeshConCount = 0;
+#else
 			params->offMeshConVerts = m_geom->getOffMeshConnectionVerts();
 			params->offMeshConRad = m_geom->getOffMeshConnectionRads();
 			params->offMeshConDir = m_geom->getOffMeshConnectionDirs();
 			params->offMeshConAreas = m_geom->getOffMeshConnectionAreas();
 			params->offMeshConFlags = m_geom->getOffMeshConnectionFlags();
 			params->offMeshConUserID = m_geom->getOffMeshConnectionId();
-			params->offMeshConCount = m_geom->getOffMeshConnectionCount();	
+			params->offMeshConCount = m_geom->getOffMeshConnectionCount();
+#endif
 		}
 	}
+
+#if RECAST_DEMO
+	void markAreas(dtTileCacheLayer* layer, const dtReal* orig, const dtReal cs, const dtReal ch) override;
+#endif
 };
 
 MeshProcess::~MeshProcess()
 {
 	// Defined out of line to fix the weak v-tables warning
 }
+
+#if RECAST_DEMO
+void MeshProcess::markAreas(dtTileCacheLayer* layer, const dtReal* orig, const dtReal cs, const dtReal ch)
+{
+}
+#endif
 
 static const int MAX_LAYERS = 32;
 
@@ -272,7 +328,11 @@ struct RasterizationContext
 		rcFreeCompactHeightfield(chf);
 		for (int i = 0; i < MAX_LAYERS; ++i)
 		{
+#if RECAST_DEMO
+			dtFree(tiles[i].data, DT_ALLOC_TEMP);
+#else
 			dtFree(tiles[i].data);
+#endif
 			tiles[i].data = 0;
 		}
 	}
@@ -299,8 +359,12 @@ int Sample_TempObstacles::rasterizeTileLayers(
 	
 	FastLZCompressor comp;
 	RasterizationContext rc;
-	
+
+#if RECAST_DEMO
+	const dtReal* verts = m_geom->getMesh()->getVerts();
+#else
 	const float* verts = m_geom->getMesh()->getVerts();
+#endif
 	const int nverts = m_geom->getMesh()->getVertCount();
 	const rcChunkyTriMesh* chunkyMesh = m_geom->getChunkyMesh();
 	
@@ -316,10 +380,17 @@ int Sample_TempObstacles::rasterizeTileLayers(
 	tcfg.bmax[0] = cfg.bmin[0] + (tx+1)*tcs;
 	tcfg.bmax[1] = cfg.bmax[1];
 	tcfg.bmax[2] = cfg.bmin[2] + (ty+1)*tcs;
+#if RECAST_DEMO
+	tcfg.bmin[0] -= tcfg.borderSize.low*tcfg.cs;
+	tcfg.bmin[2] -= tcfg.borderSize.low*tcfg.cs;
+	tcfg.bmax[0] += tcfg.borderSize.high*tcfg.cs;
+	tcfg.bmax[2] += tcfg.borderSize.high*tcfg.cs;
+#else
 	tcfg.bmin[0] -= tcfg.borderSize*tcfg.cs;
 	tcfg.bmin[2] -= tcfg.borderSize*tcfg.cs;
 	tcfg.bmax[0] += tcfg.borderSize*tcfg.cs;
 	tcfg.bmax[2] += tcfg.borderSize*tcfg.cs;
+#endif
 	
 	// Allocate voxel heightfield where we rasterize our input data to.
 	rc.solid = rcAllocHeightfield();
@@ -365,9 +436,13 @@ int Sample_TempObstacles::rasterizeTileLayers(
 		memset(rc.triareas, 0, ntris*sizeof(unsigned char));
 		rcMarkWalkableTriangles(m_ctx, tcfg.walkableSlopeAngle,
 								verts, nverts, tris, ntris, rc.triareas);
-		
+
+#if RECAST_DEMO
+		rcRasterizeTriangles(m_ctx, verts, nverts, tris, rc.triareas, ntris, *rc.solid, tcfg.walkableClimb);
+#else
 		if (!rcRasterizeTriangles(m_ctx, verts, nverts, tris, rc.triareas, ntris, *rc.solid, tcfg.walkableClimb))
 			return 0;
+#endif
 	}
 	
 	// Once all geometry is rasterized, we do initial pass of filtering to
@@ -376,7 +451,12 @@ int Sample_TempObstacles::rasterizeTileLayers(
 	if (m_filterLowHangingObstacles)
 		rcFilterLowHangingWalkableObstacles(m_ctx, tcfg.walkableClimb, *rc.solid);
 	if (m_filterLedgeSpans)
+#if RECAST_DEMO
+		rcFilterLedgeSpans(m_ctx, tcfg.walkableHeight, tcfg.walkableClimb, RC_SLOPE_FILTER_RECAST, tcfg.maxStepFromWalkableSlope, cfg.ch,  *rc.solid);
+#else
 		rcFilterLedgeSpans(m_ctx, tcfg.walkableHeight, tcfg.walkableClimb, *rc.solid);
+#endif
+
 	if (m_filterWalkableLowHeightSpans)
 		rcFilterWalkableLowHeightSpans(m_ctx, tcfg.walkableHeight, *rc.solid);
 	
@@ -429,7 +509,9 @@ int Sample_TempObstacles::rasterizeTileLayers(
 		
 		// Store header
 		dtTileCacheLayerHeader header;
+#if !RECAST_DEMO
 		header.magic = DT_TILECACHE_MAGIC;
+#endif
 		header.version = DT_TILECACHE_VERSION;
 		
 		// Tile layer location in the navmesh.
@@ -473,7 +555,11 @@ int Sample_TempObstacles::rasterizeTileLayers(
 void drawTiles(duDebugDraw* dd, dtTileCache* tc)
 {
 	unsigned int fcol[6];
+#if RECAST_DEMO
+	dtReal bmin[3], bmax[3];
+#else
 	float bmin[3], bmax[3];
+#endif
 
 	for (int i = 0; i < tc->getTileCount(); ++i)
 	{
@@ -559,7 +645,11 @@ void drawDetail(duDebugDraw* dd, dtTileCache* tc, const int tx, const int ty, in
 		}
 
 		// Build navmesh
+#if RECAST_DEMO
+		status = dtBuildTileCacheRegions(talloc, params->minRegionArea, params->mergeRegionArea, *bc.layer, dtTileCacheDistanceField());
+#else
 		status = dtBuildTileCacheRegions(talloc, *bc.layer, walkableClimbVx);
+#endif
 		if (dtStatusFailed(status))
 			return;
 		if (type == DRAWDETAIL_REGIONS)
@@ -571,20 +661,33 @@ void drawDetail(duDebugDraw* dd, dtTileCache* tc, const int tx, const int ty, in
 		bc.lcset = dtAllocTileCacheContourSet(talloc);
 		if (!bc.lcset)
 			return;
+#if RECAST_DEMO
+		status = dtBuildTileCacheContours(talloc, *bc.layer, walkableClimbVx,
+										  params->maxSimplificationError, 0, params->cs, params->ch, *bc.lcset);
+#else
 		status = dtBuildTileCacheContours(talloc, *bc.layer, walkableClimbVx,
 										  params->maxSimplificationError, *bc.lcset);
+#endif
 		if (dtStatusFailed(status))
 			return;
 		if (type == DRAWDETAIL_CONTOURS)
 		{
+#if RECAST_DEMO
+			duDebugDrawTileCacheContours(dd, *bc.lcset, bc.layer->header->tlayer, tile->header->bmin, params->cs, params->ch);
+#else
 			duDebugDrawTileCacheContours(dd, *bc.lcset, tile->header->bmin, params->cs, params->ch);
+#endif
 			continue;
 		}
 		
 		bc.lmesh = dtAllocTileCachePolyMesh(talloc);
 		if (!bc.lmesh)
 			return;
+#if RECAST_DEMO
+		status = dtBuildTileCachePolyMesh(talloc, nullptr, *bc.lcset, *bc.lmesh, params->walkableClimb);
+#else
 		status = dtBuildTileCachePolyMesh(talloc, *bc.lcset, *bc.lmesh);
+#endif
 		if (dtStatusFailed(status))
 			return;
 
@@ -631,8 +734,12 @@ void drawDetailOverlay(const dtTileCache* tc, const int tx, const int ty, double
 		}
 	}
 }
-		
+
+#if RECAST_DEMO
+dtObstacleRef hitTestObstacle(const dtTileCache* tc, const dtReal* sp, const dtReal* sq)
+#else
 dtObstacleRef hitTestObstacle(const dtTileCache* tc, const float* sp, const float* sq)
+#endif
 {
 	float tmin = FLT_MAX;
 	const dtTileCacheObstacle* obmin = 0;
@@ -641,8 +748,12 @@ dtObstacleRef hitTestObstacle(const dtTileCache* tc, const float* sp, const floa
 		const dtTileCacheObstacle* ob = tc->getObstacle(i);
 		if (ob->state == DT_OBSTACLE_EMPTY)
 			continue;
-		
+
+#if RECAST_DEMO
+		dtReal bmin[3], bmax[3], t0,t1;
+#else
 		float bmin[3], bmax[3], t0,t1;
+#endif
 		tc->getObstacleBounds(ob, bmin,bmax);
 		
 		if (isectSegAABB(sp,sq, bmin,bmax, t0,t1))
@@ -664,7 +775,11 @@ void drawObstacles(duDebugDraw* dd, const dtTileCache* tc)
 	{
 		const dtTileCacheObstacle* ob = tc->getObstacle(i);
 		if (ob->state == DT_OBSTACLE_EMPTY) continue;
+#if RECAST_DEMO
+		dtReal bmin[3], bmax[3];
+#else
 		float bmin[3], bmax[3];
+#endif
 		tc->getObstacleBounds(ob, bmin,bmax);
 
 		unsigned int col = 0;
@@ -683,7 +798,11 @@ void drawObstacles(duDebugDraw* dd, const dtTileCache* tc)
 class TempObstacleHilightTool : public SampleTool
 {
 	Sample_TempObstacles* m_sample;
+#if RECAST_DEMO
+	dtReal m_hitPos[3];
+#else
 	float m_hitPos[3];
+#endif
 	bool m_hitPosSet;
 	int m_drawType;
 	
@@ -723,7 +842,7 @@ public:
 			m_drawType = DRAWDETAIL_MESH;
 	}
 
-	virtual void handleClick(const float* /*s*/, const float* p, bool /*shift*/)
+	virtual void handleClick(const rcReal*, const rcReal* p, bool /*shift*/)
 	{
 		m_hitPosSet = true;
 		rcVcopy(m_hitPos,p);
@@ -811,7 +930,7 @@ public:
 		imguiValue("Shift+LMB to remove an obstacle.");
 	}
 	
-	virtual void handleClick(const float* s, const float* p, bool shift)
+	virtual void handleClick(const rcReal* s, const rcReal* p, bool shift)
 	{
 		if (m_sample)
 		{
@@ -876,8 +995,13 @@ void Sample_TempObstacles::handleSettings()
 	int gridSize = 1;
 	if (m_geom)
 	{
+#if RECAST_DEMO
+		const dtReal* bmin = m_geom->getNavMeshBoundsMin();
+		const dtReal* bmax = m_geom->getNavMeshBoundsMax();
+#else
 		const float* bmin = m_geom->getNavMeshBoundsMin();
 		const float* bmax = m_geom->getNavMeshBoundsMax();
+#endif
 		char text[64];
 		int gw = 0, gh = 0;
 		rcCalcGridSize(bmin, bmax, m_cellSize, &gw, &gh);
@@ -1067,8 +1191,13 @@ void Sample_TempObstacles::handleRender()
 	glDepthMask(GL_FALSE);
 	
 	// Draw bounds
+#if RECAST_DEMO
+	const dtReal* bmin = m_geom->getNavMeshBoundsMin();
+	const dtReal* bmax = m_geom->getNavMeshBoundsMax();
+#else
 	const float* bmin = m_geom->getNavMeshBoundsMin();
 	const float* bmax = m_geom->getNavMeshBoundsMax();
+#endif
 	duDebugDrawBoxWire(&m_dd, bmin[0],bmin[1],bmin[2], bmax[0],bmax[1],bmax[2], duRGBA(255,255,255,128), 1.0f);
 	
 	// Tiling grid.
@@ -1172,17 +1301,21 @@ void Sample_TempObstacles::handleMeshChanged(class InputGeom* geom)
 	initToolStates(this);
 }
 
-void Sample_TempObstacles::addTempObstacle(const float* pos)
+void Sample_TempObstacles::addTempObstacle(const dtReal* pos)
 {
 	if (!m_tileCache)
 		return;
+#if RECAST_DEMO
+	dtReal p[3];
+#else
 	float p[3];
+#endif
 	dtVcopy(p, pos);
 	p[1] -= 0.5f;
 	m_tileCache->addObstacle(p, 1.0f, 2.0f, 0);
 }
 
-void Sample_TempObstacles::removeTempObstacle(const float* sp, const float* sq)
+void Sample_TempObstacles::removeTempObstacle(const dtReal* sp, const dtReal* sq)
 {
 	if (!m_tileCache)
 		return;
@@ -1215,8 +1348,13 @@ bool Sample_TempObstacles::handleBuild()
 	m_tmproc->init(m_geom);
 	
 	// Init cache
+#if RECAST_DEMO
+	const dtReal* bmin = m_geom->getNavMeshBoundsMin();
+	const dtReal* bmax = m_geom->getNavMeshBoundsMax();
+#else
 	const float* bmin = m_geom->getNavMeshBoundsMin();
 	const float* bmax = m_geom->getNavMeshBoundsMax();
+#endif
 	int gw = 0, gh = 0;
 	rcCalcGridSize(bmin, bmax, m_cellSize, &gw, &gh);
 	const int ts = (int)m_tileSize;
@@ -1238,9 +1376,16 @@ bool Sample_TempObstacles::handleBuild()
 	cfg.mergeRegionArea = (int)rcSqr(m_regionMergeSize);	// Note: area = size*size
 	cfg.maxVertsPerPoly = (int)m_vertsPerPoly;
 	cfg.tileSize = (int)m_tileSize;
+#if RECAST_DEMO
+	cfg.borderSize.low = cfg.walkableRadius + 3; // Reserve enough padding.
+	cfg.borderSize.high = cfg.walkableRadius + 3; // Reserve enough padding.
+	cfg.width = cfg.tileSize + (cfg.walkableRadius + 3)*2;
+	cfg.height = cfg.tileSize + (cfg.walkableRadius + 3)*2;
+#else
 	cfg.borderSize = cfg.walkableRadius + 3; // Reserve enough padding.
 	cfg.width = cfg.tileSize + cfg.borderSize*2;
 	cfg.height = cfg.tileSize + cfg.borderSize*2;
+#endif
 	cfg.detailSampleDist = m_detailSampleDist < 0.9f ? 0 : m_cellSize * m_detailSampleDist;
 	cfg.detailSampleMaxError = m_cellHeight * m_detailSampleMaxError;
 	rcVcopy(cfg.bmin, bmin);
@@ -1330,7 +1475,11 @@ bool Sample_TempObstacles::handleBuild()
 				status = m_tileCache->addTile(tile->data, tile->dataSize, DT_COMPRESSEDTILE_FREE_DATA, 0);
 				if (dtStatusFailed(status))
 				{
+#if RECAST_DEMO
+					dtFree(tile->data, DT_ALLOC_TEMP);
+#else
 					dtFree(tile->data);
+#endif
 					tile->data = 0;
 					continue;
 				}
@@ -1383,11 +1532,15 @@ void Sample_TempObstacles::handleUpdate(const float dt)
 	m_tileCache->update(dt, m_navMesh);
 }
 
-void Sample_TempObstacles::getTilePos(const float* pos, int& tx, int& ty)
+void Sample_TempObstacles::getTilePos(const dtReal* pos, int& tx, int& ty)
 {
 	if (!m_geom) return;
-	
+
+#if RECAST_DEMO
+	const dtReal* bmin = m_geom->getNavMeshBoundsMin();
+#else
 	const float* bmin = m_geom->getNavMeshBoundsMin();
+#endif
 	
 	const float ts = m_tileSize*m_cellSize;
 	tx = (int)((pos[0] - bmin[0]) / ts);
@@ -1524,7 +1677,11 @@ void Sample_TempObstacles::loadAll(const char* path)
 		if( tileDataReadReturnCode != 1)
 		{
 			// Error or early EOF
+#if RECAST_DEMO
+			dtFree(data, DT_ALLOC_TEMP);
+#else
 			dtFree(data);
+#endif
 			fclose(fp);
 			return;
 		}
@@ -1533,7 +1690,11 @@ void Sample_TempObstacles::loadAll(const char* path)
 		dtStatus addTileStatus = m_tileCache->addTile(data, tileHeader.dataSize, DT_COMPRESSEDTILE_FREE_DATA, &tile);
 		if (dtStatusFailed(addTileStatus))
 		{
+#if RECAST_DEMO
+			dtFree(data, DT_ALLOC_TEMP);
+#else
 			dtFree(data);
+#endif
 		}
 
 		if (tile)

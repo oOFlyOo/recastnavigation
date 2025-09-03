@@ -33,8 +33,13 @@
 #include "imgui.h"
 #include "imguiRenderGL.h"
 
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#include "DebugUtils/RecastDebugDraw.h"
+#else
 #include "Recast.h"
 #include "RecastDebugDraw.h"
+#endif
 #include "InputGeom.h"
 #include "TestCase.h"
 #include "Filelist.h"
@@ -149,8 +154,8 @@ int main(int /*argc*/, char** /*argv*/)
 	float scrollZoom = 0;
 	bool rotate = false;
 	bool movedDuringRotate = false;
-	float rayStart[3];
-	float rayEnd[3];
+	dtReal rayStart[3];
+	dtReal rayEnd[3];
 	bool mouseOverMenu = false;
 	
 	bool showMenu = !presentationMode;
@@ -386,7 +391,11 @@ int main(int /*argc*/, char** /*argv*/)
 				}
 				else
 				{
+#if RECAST_DEMO
+					dtReal pos[3];
+#else
 					float pos[3];
+#endif
 					pos[0] = rayStart[0] + (rayEnd[0] - rayStart[0]) * hitTime;
 					pos[1] = rayStart[1] + (rayEnd[1] - rayStart[1]) * hitTime;
 					pos[2] = rayStart[2] + (rayEnd[2] - rayStart[2]) * hitTime;
@@ -651,8 +660,13 @@ int main(int /*argc*/, char** /*argv*/)
 
 			if (geom || sample)
 			{
+#if RECAST_DEMO
+				const rcReal* bmin = 0;
+				const rcReal* bmax = 0;
+#else
 				const float* bmin = 0;
 				const float* bmax = 0;
+#endif
 				if (geom)
 				{
 					bmin = geom->getNavMeshBoundsMin();
@@ -730,8 +744,13 @@ int main(int /*argc*/, char** /*argv*/)
 
 				if (geom || sample)
 				{
+#if RECAST_DEMO
+					const rcReal* bmin = 0;
+					const rcReal* bmax = 0;
+#else
 					const float* bmin = 0;
 					const float* bmax = 0;
+#endif
 					if (geom)
 					{
 						bmin = geom->getNavMeshBoundsMin();
@@ -846,8 +865,13 @@ int main(int /*argc*/, char** /*argv*/)
 					
 					if (geom || sample)
 					{
+#if RECAST_DEMO
+						const rcReal* bmin = 0;
+						const rcReal* bmax = 0;
+#else
 						const float* bmin = 0;
 						const float* bmax = 0;
+#endif
 						if (geom)
 						{
 							bmin = geom->getNavMeshBoundsMin();

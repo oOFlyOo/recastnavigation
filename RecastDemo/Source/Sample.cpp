@@ -20,12 +20,21 @@
 #include <stdio.h>
 #include "Sample.h"
 #include "InputGeom.h"
+#if RECAST_DEMO
+#include "Recast/Recast.h"
+#include "DebugUtils/RecastDebugDraw.h"
+#include "DebugUtils/DetourDebugDraw.h"
+#include "Detour/DetourNavMesh.h"
+#include "Detour/DetourNavMeshQuery.h"
+#include "DetourCrowd/DetourCrowd.h"
+#else
 #include "Recast.h"
 #include "RecastDebugDraw.h"
 #include "DetourDebugDraw.h"
 #include "DetourNavMesh.h"
 #include "DetourNavMeshQuery.h"
 #include "DetourCrowd.h"
+#endif
 #include "imgui.h"
 #include "SDL.h"
 #include "SDL_opengl.h"
@@ -124,8 +133,13 @@ void Sample::handleRender()
 	duDebugDrawTriMesh(&m_dd, m_geom->getMesh()->getVerts(), m_geom->getMesh()->getVertCount(),
 					   m_geom->getMesh()->getTris(), m_geom->getMesh()->getNormals(), m_geom->getMesh()->getTriCount(), 0, 1.0f);
 	// Draw bounds
+#if RECAST_DEMO
+	const dtReal* bmin = m_geom->getMeshBoundsMin();
+	const dtReal* bmax = m_geom->getMeshBoundsMax();
+#else
 	const float* bmin = m_geom->getMeshBoundsMin();
 	const float* bmax = m_geom->getMeshBoundsMax();
+#endif
 	duDebugDrawBoxWire(&m_dd, bmin[0],bmin[1],bmin[2], bmax[0],bmax[1],bmax[2], duRGBA(255,255,255,128), 1.0f);
 }
 
@@ -202,8 +216,13 @@ void Sample::handleCommonSettings()
 	
 	if (m_geom)
 	{
+#if RECAST_DEMO
+		const dtReal* bmin = m_geom->getNavMeshBoundsMin();
+		const dtReal* bmax = m_geom->getNavMeshBoundsMax();
+#else
 		const float* bmin = m_geom->getNavMeshBoundsMin();
 		const float* bmax = m_geom->getNavMeshBoundsMax();
+#endif
 		int gw = 0, gh = 0;
 		rcCalcGridSize(bmin, bmax, m_cellSize, &gw, &gh);
 		char text[64];
@@ -255,7 +274,7 @@ void Sample::handleCommonSettings()
 	imguiSeparator();
 }
 
-void Sample::handleClick(const float* s, const float* p, bool shift)
+void Sample::handleClick(const dtReal* s, const dtReal* p, bool shift)
 {
 	if (m_tool)
 		m_tool->handleClick(s, p, shift);
@@ -405,7 +424,11 @@ dtNavMesh* Sample::loadAll(const char* path)
 		readLen = fread(data, tileHeader.dataSize, 1, fp);
 		if (readLen != 1)
 		{
+#if RECAST_DEMO
+			dtFree(data, DT_ALLOC_TEMP);
+#else
 			dtFree(data);
+#endif
 			fclose(fp);
 			return 0;
 		}
