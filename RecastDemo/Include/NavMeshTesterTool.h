@@ -149,6 +149,10 @@ public:
 	virtual void handleRender();
 	virtual void handleRenderOverlay(double* proj, double* model, int* view);
 
+#if RECAST_DEMO
+	void findPath();
+#endif
+
 	void recalc();
 #if RECAST_DEMO
 	void drawAgent(const dtReal* pos, float r, float h, float c, const unsigned int col);

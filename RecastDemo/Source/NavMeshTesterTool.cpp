@@ -154,15 +154,26 @@ static bool getSteerTarget(dtNavMeshQuery* navQuery, const float* startPos, cons
 
 	// Find steer target.
 #if RECAST_DEMO
-	static const int MAX_STEER_POINTS = 3;
-	dtReal steerPath[MAX_STEER_POINTS*3];
-	unsigned char steerPathFlags[MAX_STEER_POINTS];
-	dtPolyRef steerPathPolys[MAX_STEER_POINTS];
-	int nsteerPath = 0;
+	static const int MAX_STEER_POINTS = 6;
 
 	dtQueryResult findStraightPathResult;
 	navQuery->findStraightPath(startPos, endPos, path, pathSize,
 							   findStraightPathResult);
+
+	int nsteerPath = findStraightPathResult.size();
+	if (!nsteerPath || nsteerPath > MAX_STEER_POINTS)
+		return false;
+
+	dtReal steerPath[MAX_STEER_POINTS*3];
+	unsigned char steerPathFlags[MAX_STEER_POINTS];
+	dtPolyRef steerPathPolys[MAX_STEER_POINTS];
+
+	for (int Index = 0; Index < nsteerPath; ++Index)
+	{
+		steerPathPolys[Index] = findStraightPathResult.getRef(Index);
+		steerPathFlags[Index] = findStraightPathResult.getFlag(Index);
+		findStraightPathResult.getPos(Index, &steerPath[Index * 3]);
+	}
 #else
 	static const int MAX_STEER_POINTS = 3;
 	float steerPath[MAX_STEER_POINTS*3];
@@ -171,9 +182,10 @@ static bool getSteerTarget(dtNavMeshQuery* navQuery, const float* startPos, cons
 	int nsteerPath = 0;
 	navQuery->findStraightPath(startPos, endPos, path, pathSize,
 							   steerPath, steerPathFlags, steerPathPolys, &nsteerPath, MAX_STEER_POINTS);
-#endif
+
 	if (!nsteerPath)
 		return false;
+#endif
 		
 	if (outPoints && outPointCount)
 	{
@@ -231,9 +243,15 @@ NavMeshTesterTool::NavMeshTesterTool() :
 	m_filter.setIncludeFlags(SAMPLE_POLYFLAGS_ALL ^ SAMPLE_POLYFLAGS_DISABLED);
 	m_filter.setExcludeFlags(0);
 
+#if RECAST_DEMO
+	m_polyPickExt[0] = 6;
+	m_polyPickExt[1] = 8;
+	m_polyPickExt[2] = 6;
+#else
 	m_polyPickExt[0] = 2;
 	m_polyPickExt[1] = 4;
 	m_polyPickExt[2] = 2;
+#endif
 	
 	m_neighbourhoodRadius = 2.5f;
 	m_randomRadius = 5.0f;
@@ -734,6 +752,26 @@ void NavMeshTesterTool::reset()
 	m_distanceToWall = 0;
 }
 
+#if RECAST_DEMO
+void NavMeshTesterTool::findPath()
+{
+	const float CostLimit = FLT_MAX;
+	dtQueryResult Result;
+
+	dtStatus FindPathStatus = m_navQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, CostLimit, &m_filter, Result, nullptr);
+
+	if (!dtStatusSucceed(FindPathStatus))
+	{
+		return;
+	}
+
+	m_npolys = Result.size();
+	for (int Index = 0; Index < m_npolys; ++Index)
+	{
+		m_polys[Index] = Result.getRef(Index);
+	}
+}
+#endif
 
 void NavMeshTesterTool::recalc()
 {
@@ -764,10 +802,7 @@ void NavMeshTesterTool::recalc()
 #endif
 
 #if RECAST_DEMO
-		const float CostLimit = FLT_MAX;
-		dtQueryResult Result;
-
-		m_navQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, CostLimit, &m_filter, Result, nullptr);
+		findPath();
 #else
 		m_navQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, &m_filter, m_polys, &m_npolys, MAX_POLYS);
 #endif
