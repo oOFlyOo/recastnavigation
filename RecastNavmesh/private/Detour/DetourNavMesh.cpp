@@ -1641,7 +1641,7 @@ int dtNavMesh::queryPolygonsInTile(const dtMeshTile* tile, const dtReal* qmin, c
 
 		// Quantize
 		const dtReal bvQuantFactor = m_params.resolutionParams[tile->header->resolution].bvQuantFactor; 	//@UE
-#if RECAST_UNREAL_ENGINE
+#if __cplusplus >= 201703L
 		UE_CLOG(bvQuantFactor == 0.f, LogDetour, Warning, TEXT("dtNavMesh::queryPolygonsInTile bounding volume quantization factor is zero! The query might not return the right result"));
 #endif
 		bmin[0] = (unsigned short)(bvQuantFactor * minx) & 0xfffe;

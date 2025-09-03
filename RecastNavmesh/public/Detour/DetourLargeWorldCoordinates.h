@@ -16,7 +16,7 @@ typedef double dtReal;
 
 #endif // DT_LARGE_WORLD_COORDINATES_DISABLED
 
-#if __cpluspls >= 201703L
+#if __cplusplus >= 201703L
 inline constexpr dtReal DT_REAL_MAX = std::numeric_limits<dtReal>::max();
 #else
 constexpr dtReal DT_REAL_MAX = std::numeric_limits<dtReal>::max();

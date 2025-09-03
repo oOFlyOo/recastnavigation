@@ -511,9 +511,7 @@ bool rcBuildCompactHeightfield(rcContext* ctx, const int walkableHeight, const i
 	chf.cells = (rcCompactCell*)rcAlloc(sizeof(rcCompactCell)*w*h, RC_ALLOC_PERM);
 	if (!chf.cells)
 	{
-#if RECAST_UNREAL_ENGINE
 		UE_LOG(LogRecast, VeryVerbose, TEXT("rcBuildCompactHeightfield: Out of memory 'chf.cells' (%d)"), w*h);
-#endif
 		return false;
 	}
 	memset(chf.cells, 0, sizeof(rcCompactCell)*w*h);
@@ -521,18 +519,14 @@ bool rcBuildCompactHeightfield(rcContext* ctx, const int walkableHeight, const i
 	if (!chf.spans)
 	{
 		//converted to UE_log to avoid false positives with Chaos
-#if RECAST_UNREAL_ENGINE
 		UE_LOG(LogRecast, VeryVerbose, TEXT("rcBuildCompactHeightfield: Out of memory 'chf.spans' (%d)"), spanCount);
-#endif
 		return false;
 	}
 	memset(chf.spans, 0, sizeof(rcCompactSpan)*spanCount);
 	chf.areas = (unsigned char*)rcAlloc(sizeof(unsigned char)*spanCount, RC_ALLOC_PERM);
 	if (!chf.areas)
 	{
-#if RECAST_UNREAL_ENGINE
 		UE_LOG(LogRecast, VeryVerbose, TEXT("rcBuildCompactHeightfield: Out of memory 'chf.areas' (%d)"), spanCount);
-#endif
 		return false;
 	}
 	memset(chf.areas, RC_NULL_AREA, sizeof(unsigned char)*spanCount);
