@@ -36,16 +36,17 @@ const int kMaxAllocSize = 1024;
 const unsigned char kClearValue = 0xff;
 
 /// Simple alloc/free that clears the memory on free..
-#if RECAST_UNREAL_ENGINE
-void* AllocAndInit(size_t size, rcAllocHint) {
-	rcAssert(kMaxAllocSize >= size);
-	return memset(malloc(kMaxAllocSize), 0, kMaxAllocSize);
-}
-#else
+#if RECAST_DEMO
 void* AllocAndInit(int size, rcAllocHint) {
 	rcAssert(kMaxAllocSize >= size);
 	return memset(malloc(kMaxAllocSize), 0, kMaxAllocSize);
 }
+#else
+void* AllocAndInit(size_t size, rcAllocHint) {
+	rcAssert(kMaxAllocSize >= size);
+	return memset(malloc(kMaxAllocSize), 0, kMaxAllocSize);
+}
+
 #endif
 
 void FreeAndClear(void* mem) {

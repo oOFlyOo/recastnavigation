@@ -303,7 +303,7 @@ TEST_CASE("rcFilterLowHangingWalkableObstacles", "[recast, filtering]")
 	}
 }
 
-#if RECAST_UNREAL_ENGINE
+#if !RECAST_DEMO
 TEST_CASE("rcFilterLedgeSpans", "[recast, filtering]")
 {
 	rcContext context;
