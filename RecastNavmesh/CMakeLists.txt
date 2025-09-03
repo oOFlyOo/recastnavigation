@@ -36,6 +36,18 @@ else()
 	target_compile_definitions(RecastNavmesh PUBLIC RECAST_TODO=0)
 endif()
 
+if(RECASTNAVIGATION_WITH_NAVMESH_SEGMENT_LINKS)
+    target_compile_definitions(RecastNavmesh PUBLIC WITH_NAVMESH_SEGMENT_LINKS=1)
+else()
+	target_compile_definitions(RecastNavmesh PUBLIC WITH_NAVMESH_SEGMENT_LINKS=0)
+endif()
+
+if(RECASTNAVIGATION_WITH_NAVMESH_CLUSTER_LINKS)
+    target_compile_definitions(RecastNavmesh PUBLIC WITH_NAVMESH_CLUSTER_LINKS=1)
+else()
+	target_compile_definitions(RecastNavmesh PUBLIC WITH_NAVMESH_CLUSTER_LINKS=0)
+endif()
+
 target_compile_definitions(RecastNavmesh PUBLIC NAVMESH_DLL)
 
 target_include_directories(RecastNavmesh PUBLIC

@@ -663,7 +663,7 @@ void drawDetail(duDebugDraw* dd, dtTileCache* tc, const int tx, const int ty, in
 			return;
 #if RECAST_DEMO
 		status = dtBuildTileCacheContours(talloc, *bc.layer, walkableClimbVx,
-										  params->maxSimplificationError, 0, params->cs, params->ch, *bc.lcset);
+										  params->maxSimplificationError, 0, params->cs, params->ch, *bc.lcset, dtTileCacheClusterSet());
 #else
 		status = dtBuildTileCacheContours(talloc, *bc.layer, walkableClimbVx,
 										  params->maxSimplificationError, *bc.lcset);
