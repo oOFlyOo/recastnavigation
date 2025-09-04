@@ -107,7 +107,7 @@ static const unsigned short DT_EXT_LINK = 0x8000;
 
 /// A value that indicates the entity does not link to anything.
 ///
-#if __cpluspls >= 201703L
+#if __cplusplus >= 201703L
 inline const unsigned int DT_NULL_LINK = 0xffffffff;
 #else
 const unsigned int DT_NULL_LINK = 0xffffffff;
